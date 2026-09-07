@@ -2,10 +2,6 @@ name: Deploy Infrastructure (OpenTofu)
 
 on:
   workflow_dispatch: # Allows manual trigger from GitHub Actions Web UI
-  push:
-    branches: [main]
-    paths:
-      - 'terraform/**'
 
 jobs:
   deploy-terraform:
