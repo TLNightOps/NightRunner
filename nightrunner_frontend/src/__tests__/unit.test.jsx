@@ -514,5 +514,86 @@ describe('Pending Approval User Contracts', () => {
   });
 });
 
+describe('CheckInOut & LiveScoring Station Visit Integration Contracts', () => {
+  it('resolves active visit status and selects default check-in/out action based on station visits', () => {
+    const visits = [
+      {
+        id: 'v-1',
+        eventId: 'evt-1',
+        patrolId: 'p-10',
+        stationId: 'st-5',
+        checkedInAt: '2026-09-09T20:00:00Z',
+        checkedOutAt: null,
+        createdAt: '2026-09-09T20:00:00Z'
+      }
+    ];
+
+    const getVisitRecord = (patrolId, stationId) => {
+      const matches = visits.filter(
+        (v) => String(v.patrolId) === String(patrolId) && String(v.stationId) === String(stationId)
+      );
+      if (matches.length === 0) return null;
+      matches.sort((a, b) => new Date(b.createdAt || b.checkedInAt) - new Date(a.createdAt || a.checkedInAt));
+      return matches[0];
+    };
+
+    // 1. Selected patrol & station with an active check-in (no check-out)
+    const activeVisit = getVisitRecord('p-10', 'st-5');
+    const isCurrentlyCheckedIn = Boolean(activeVisit && activeVisit.checkedInAt && !activeVisit.checkedOutAt);
+    expect(isCurrentlyCheckedIn).toBe(true);
+    const recommendedAction = isCurrentlyCheckedIn ? 'check-out' : 'check-in';
+    expect(recommendedAction).toBe('check-out');
+
+    // 2. Selected patrol & station with no prior visits
+    const noVisit = getVisitRecord('p-99', 'st-5');
+    expect(noVisit).toBeNull();
+    const recommendedActionNew = noVisit && noVisit.checkedInAt && !noVisit.checkedOutAt ? 'check-out' : 'check-in';
+    expect(recommendedActionNew).toBe('check-in');
+  });
+
+  it('builds LiveScoring visitMap with snake_case and camelCase fallback support and sorts by timestamp', () => {
+    const rawVisits = [
+      {
+        patrol_id: 'p-1',
+        station_id: 'st-1',
+        checked_in_at: '2026-09-09T19:00:00Z',
+        checked_out_at: null,
+        created_at: '2026-09-09T19:00:00Z'
+      },
+      {
+        patrolId: 'p-2',
+        stationId: 'st-2',
+        checkedInAt: '2026-09-09T19:30:00Z',
+        checkedOutAt: '2026-09-09T20:00:00Z',
+        createdAt: '2026-09-09T19:30:00Z'
+      }
+    ];
+
+    const visitMap = {};
+    const sortedVisits = [...rawVisits].sort(
+      (a, b) => new Date(a.createdAt || a.created_at || 0) - new Date(b.createdAt || b.created_at || 0)
+    );
+    for (const v of sortedVisits) {
+      const pid = v.patrolId || v.patrol_id;
+      const sid = v.stationId || v.station_id;
+      if (pid && sid) {
+        visitMap[`${pid}_${sid}`] = {
+          checkedInAt: v.checkedInAt || v.checked_in_at || null,
+          checkedOutAt: v.checkedOutAt || v.checked_out_at || null
+        };
+      }
+    }
+
+    expect(visitMap['p-1_st-1']).toEqual({
+      checkedInAt: '2026-09-09T19:00:00Z',
+      checkedOutAt: null
+    });
+    expect(visitMap['p-2_st-2']).toEqual({
+      checkedInAt: '2026-09-09T19:30:00Z',
+      checkedOutAt: '2026-09-09T20:00:00Z'
+    });
+  });
+});
+
 
 

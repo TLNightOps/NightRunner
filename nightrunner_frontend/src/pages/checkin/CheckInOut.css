@@ -174,6 +174,52 @@
 
 }
 
+/* ---------- Visit Status Badge ---------- */
+
+.visit-status-badge {
+
+    padding: .4rem .85rem;
+
+    border-radius: 8px;
+
+    font-size: .9rem;
+
+    font-weight: 600;
+
+    margin-bottom: .25rem;
+
+}
+
+.badge-checked-in {
+
+    background: #e3f2fd;
+
+    color: #1565c0;
+
+    border: 1px solid #90caf9;
+
+}
+
+.badge-checked-out {
+
+    background: #e8f5e9;
+
+    color: #2e7d32;
+
+    border: 1px solid #a5d6a7;
+
+}
+
+.badge-not-arrived {
+
+    background: var(--page-bg);
+
+    color: var(--text-muted);
+
+    border: 1px solid var(--border);
+
+}
+
 /* ---------- Completion ---------- */
 
 .checkin-complete-panel {

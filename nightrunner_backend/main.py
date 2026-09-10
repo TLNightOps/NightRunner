@@ -18,6 +18,7 @@ from nightrunner_backend.transport.reports_station import StationReportResource
 from nightrunner_backend.transport.login import LoginResource
 
 from nightrunner_backend.transport.users import UsersResource, UserResource
+from nightrunner_backend.transport.visits import VisitsResource, VisitCheckInResource, VisitCheckOutResource
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG if settings.dev_mode else logging.INFO)
@@ -66,6 +67,10 @@ def register_routes(app):
     app.add_route("/v1/auth/login", LoginResource())
     app.add_route("/v1/scores", ScoresResource())
     app.add_route("/v1/scores/{scoreId}", ScoreResource())
+    app.add_route("/v1/visits", VisitsResource())
+    app.add_route("/v1/visits/check-in", VisitCheckInResource())
+    app.add_route("/v1/visits/check-out", VisitCheckOutResource())
+    app.add_route("/v1/reports/events/{eventId}", EventReportResource())
     app.add_route("/health", HealthResource())
     app.add_route("/v1/me", MeResource())
     app.add_route("/v1/events", EventsResource())

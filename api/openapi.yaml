@@ -567,6 +567,92 @@ paths:
       responses:
         '201':
           description: Scores submitted successfully.
+
+  /v1/visits:
+    get:
+      summary: List Station Visits
+      description: Retrieves all station check-in/check-out visits for an event.
+      tags:
+        - Visits
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of station visits for the event.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventId:
+                    type: string
+                  visits:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StationVisit'
+
+  /v1/visits/check-in:
+    post:
+      summary: Check In Patrol
+      description: Records a patrol's check-in at a station.
+      tags:
+        - Visits
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+      responses:
+        '200':
+          description: Active visit updated with check-in timestamp.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationVisit'
+        '201':
+          description: Station visit created with check-in timestamp.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationVisit'
+
+  /v1/visits/check-out:
+    post:
+      summary: Check Out Patrol
+      description: Records a patrol's check-out from a station.
+      tags:
+        - Visits
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckOutRequest'
+      responses:
+        '200':
+          description: Station visit updated with check-out timestamp.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationVisit'
+        '201':
+          description: Station visit created with check-out timestamp.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationVisit'
   /v1/reports/events/{eventId}:
     get:
       summary: Get Event Report
@@ -1382,3 +1468,90 @@ components:
             message:
               type: string
               example: "A descriptive error message."
+    StationVisit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        patrolId:
+          type: string
+          format: uuid
+        checkedInAt:
+          type: string
+          format: date-time
+          nullable: true
+        checkedOutAt:
+          type: string
+          format: date-time
+          nullable: true
+        tasksStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        tasksCompletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        entryMode:
+          type: string
+          enum: [live, manual]
+          default: live
+        createdAt:
+          type: string
+          format: date-time
+    CheckInRequest:
+      type: object
+      required:
+        - eventId
+        - stationId
+        - patrolId
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        patrolId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+          nullable: true
+        entryMode:
+          type: string
+          enum: [live, manual]
+          default: live
+    CheckOutRequest:
+      type: object
+      required:
+        - eventId
+        - stationId
+        - patrolId
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        patrolId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+          nullable: true
+        entryMode:
+          type: string
+          enum: [live, manual]
+          default: live
+

@@ -7,6 +7,7 @@ import PatrolService from "./PatrolService.js";
 import ReportService from "./ReportService.js";
 import StationService from "./StationService.js";
 import ConfigurationService from "@/api/ConfigurationService.js";
+import CheckInService from "./CheckInService.js";
 
 
 class ApiService {
@@ -65,6 +66,13 @@ class ApiService {
     reportData;
 
     /**
+     * Check in / Check out operations
+     *
+     * @type {CheckInService}
+     */
+    checkInData;
+
+    /**
      * Direct backend transport.
      *
      * @type {BackendTransport}
@@ -105,6 +113,9 @@ class ApiService {
 
         this.reportData =
             new ReportService();
+
+        this.checkInData =
+            new CheckInService();
 
     }
 

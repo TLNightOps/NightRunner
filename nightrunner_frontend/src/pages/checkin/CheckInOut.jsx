@@ -39,6 +39,8 @@ export default function CheckInOut() {
     const [completed, setCompleted] =
         useState(false);
 
+    const [visits, setVisits] = useState([]);
+
     useEffect(() => {
         if (eventLoading) {
             return;
@@ -48,6 +50,7 @@ export default function CheckInOut() {
             setError(eventError);
             setPatrols([]);
             setStations([]);
+            setVisits([]);
             setLoading(false);
             return;
         }
@@ -56,6 +59,7 @@ export default function CheckInOut() {
             setError("No event is currently selected.");
             setPatrols([]);
             setStations([]);
+            setVisits([]);
             setLoading(false);
             return;
         }
@@ -84,14 +88,18 @@ export default function CheckInOut() {
 
             const [
                 patrolResponse,
-                stationResponse
+                stationResponse,
+                visitResponse
             ] = await Promise.all([
                 ApiService.patrolData.getPatrols(
                     selectedEventId
                 ),
                 ApiService.stationData.getStations(
                     selectedEventId
-                )
+                ),
+                ApiService.checkInData.getVisits(
+                    selectedEventId
+                ).catch(() => ({ visits: [] }))
             ]);
 
             setPatrols(
@@ -100,6 +108,10 @@ export default function CheckInOut() {
 
             setStations(
                 stationResponse ?? []
+            );
+
+            setVisits(
+                visitResponse?.visits ?? []
             );
         } catch (error) {
             console.error(
@@ -114,10 +126,29 @@ export default function CheckInOut() {
 
             setPatrols([]);
             setStations([]);
+            setVisits([]);
         } finally {
             setLoading(false);
         }
     }
+
+    // Helper to find the current active/latest visit record for a patrol & station
+    function getVisitRecord(patrolId, stationId) {
+        if (!patrolId || !stationId || !visits) return null;
+        // Search visits for matching patrol and station, taking the latest one
+        const matches = visits.filter(
+            (v) => String(v.patrolId) === String(patrolId) && String(v.stationId) === String(stationId)
+        );
+        if (matches.length === 0) return null;
+        // Sort descending by createdAt or checkedInAt
+        matches.sort((a, b) => new Date(b.createdAt || b.checkedInAt) - new Date(a.createdAt || a.checkedInAt));
+        return matches[0];
+    }
+
+    // Determine current status string and recommended action for chosen patrol & station
+    const activeVisit = selectedPatrol && selectedStation ? getVisitRecord(selectedPatrol.id, selectedStation.id) : null;
+    const isCurrentlyCheckedIn = Boolean(activeVisit && activeVisit.checkedInAt && !activeVisit.checkedOutAt);
+    const isCurrentlyCheckedOut = Boolean(activeVisit && activeVisit.checkedOutAt);
 
     function handleActionChange(nextAction) {
         setAction(nextAction);
@@ -127,11 +158,27 @@ export default function CheckInOut() {
     function handlePatrolSelection(patrol) {
         setSelectedPatrol(patrol);
         setCompleted(false);
+        if (patrol && selectedStation) {
+            const v = getVisitRecord(patrol.id, selectedStation.id);
+            if (v && v.checkedInAt && !v.checkedOutAt) {
+                setAction(ACTIONS.CHECK_OUT);
+            } else {
+                setAction(ACTIONS.CHECK_IN);
+            }
+        }
     }
 
     function handleStationSelection(station) {
         setSelectedStation(station);
         setCompleted(false);
+        if (selectedPatrol && station) {
+            const v = getVisitRecord(selectedPatrol.id, station.id);
+            if (v && v.checkedInAt && !v.checkedOutAt) {
+                setAction(ACTIONS.CHECK_OUT);
+            } else {
+                setAction(ACTIONS.CHECK_IN);
+            }
+        }
     }
 
     async function handleSubmit() {
@@ -142,33 +189,35 @@ export default function CheckInOut() {
             return;
         }
 
-        /*
-         * Backend integration will go here.
-         *
-         * Example:
-         *
-         * if (action === ACTIONS.CHECK_IN) {
-         *
-         *     await ApiService.checkInData.checkIn({
-         *         eventId,
-         *         patrolId: selectedPatrol.id,
-         *         stationId: selectedStation.id,
-         *         timestamp: new Date().toISOString()
-         *     });
-         *
-         * } else {
-         *
-         *     await ApiService.checkInData.checkOut({
-         *         eventId,
-         *         patrolId: selectedPatrol.id,
-         *         stationId: selectedStation.id,
-         *         timestamp: new Date().toISOString()
-         *     });
-         *
-         * }
-         */
-
-        setCompleted(true);
+        try {
+            setError(null);
+            let res;
+            if (action === ACTIONS.CHECK_IN) {
+                res = await ApiService.checkInData.checkIn({
+                    eventId,
+                    patrolId: selectedPatrol.id,
+                    stationId: selectedStation.id,
+                    timestamp: new Date().toISOString()
+                });
+            } else {
+                res = await ApiService.checkInData.checkOut({
+                    eventId,
+                    patrolId: selectedPatrol.id,
+                    stationId: selectedStation.id,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            setCompleted(true);
+            // Refresh visits list in background to keep local state synchronized
+            if (eventId) {
+                ApiService.checkInData.getVisits(eventId).then((vRes) => {
+                    setVisits(vRes?.visits ?? []);
+                }).catch(() => {});
+            }
+        } catch (err) {
+            console.error("Check-in/out error:", err);
+            setError(err?.message ?? `Failed to perform ${actionName.toLowerCase()}.`);
+        }
     }
 
     function reset() {
@@ -322,23 +371,40 @@ export default function CheckInOut() {
                                 </h2>
 
                                 {canSubmit ? (
-                                    <p>
-                                        <strong>
-                                            {selectedPatrol.name}
-                                        </strong>
-                                        {" "}
-                                        will be marked as{" "}
-                                        <strong>
-                                            {action === ACTIONS.CHECK_IN
-                                                ? "checked in"
-                                                : "checked out"}
-                                        </strong>
-                                        {" "}
-                                        at{" "}
-                                        <strong>
-                                            {selectedStation.name}
-                                        </strong>.
-                                    </p>
+                                    <>
+                                        {isCurrentlyCheckedIn && (
+                                            <div className="visit-status-badge badge-checked-in">
+                                                Status: Checked In (since {new Date(activeVisit.checkedInAt).toLocaleTimeString()})
+                                            </div>
+                                        )}
+                                        {isCurrentlyCheckedOut && (
+                                            <div className="visit-status-badge badge-checked-out">
+                                                Status: Checked Out (at {new Date(activeVisit.checkedOutAt).toLocaleTimeString()})
+                                            </div>
+                                        )}
+                                        {!isCurrentlyCheckedIn && !isCurrentlyCheckedOut && (
+                                            <div className="visit-status-badge badge-not-arrived">
+                                                Status: Not Arrived
+                                            </div>
+                                        )}
+                                        <p>
+                                            <strong>
+                                                {selectedPatrol.name}
+                                            </strong>
+                                            {" "}
+                                            will be marked as{" "}
+                                            <strong>
+                                                {action === ACTIONS.CHECK_IN
+                                                    ? "checked in"
+                                                    : "checked out"}
+                                            </strong>
+                                            {" "}
+                                            at{" "}
+                                            <strong>
+                                                {selectedStation.name}
+                                            </strong>.
+                                        </p>
+                                    </>
                                 ) : (
                                     <p>
                                         Select a patrol and station to continue.
