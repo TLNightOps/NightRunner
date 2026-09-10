@@ -243,6 +243,7 @@ function Login() {
                                         type="email"
                                         required
                                         value={email}
+                                        autoComplete="current-email"
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="you@example.com"
                                         disabled={isSubmitting}
