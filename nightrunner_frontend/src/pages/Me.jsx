@@ -3,7 +3,7 @@ import { useAuth } from "react-oidc-context";
 
 import "./Me.css";
 
-import AuthService from "../api/AuthService";
+import AuthService from "../api/auth/AuthService.js";
 import ApiService from "../api/ApiService";
 
 import useBranding from "../branding/UseBranding";

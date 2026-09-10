@@ -7,7 +7,7 @@ import Sidebar from "./Sidebar";
 
 import Footer from "@/components/Footer.jsx";
 
-import AuthService from "@/api/AuthService.js";
+import AuthService from "@/api/auth/AuthService.js";
 
 export default function Layout() {
 

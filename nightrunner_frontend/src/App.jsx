@@ -17,7 +17,7 @@ import {
 } from "./AppRoutes.jsx";
 
 
-import AuthService from "@/api/AuthService.js";
+import AuthService from "@/api/auth/AuthService.js";
 import ApiService from "@/api/ApiService.js";
 
 function ProtectedRoute({ children }) {

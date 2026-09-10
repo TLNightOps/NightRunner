@@ -8,7 +8,7 @@ import {
 import { useAuth } from "react-oidc-context";
 
 import EventSelector from "./EventSelector.jsx";
-import AuthService from "../AuthService.js";
+import AuthService from "../auth/AuthService.js";
 import ApiService from "../ApiService.js";
 import useBranding from "@/branding/UseBranding.js";
 

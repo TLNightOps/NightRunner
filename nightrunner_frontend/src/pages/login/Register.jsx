@@ -4,7 +4,7 @@ import {
     isFirebaseMode,
     firebaseRegisterWithEmail,
     firebaseUpdateProfile
-} from "@/api/firebaseAuth.js";
+} from "@/api/auth/firebaseAuth.js";
 import ApiService from "../../api/ApiService.js";
 import "./Register.css";
 

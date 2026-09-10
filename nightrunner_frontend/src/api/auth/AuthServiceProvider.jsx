@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 
-import AuthService from "@/api/AuthService.js";
+import AuthService from "@/api/auth/AuthService.js";
 import ApiService from "@/api/ApiService.js";
 
 export default function AuthServiceProvider({
@@ -24,7 +24,7 @@ export default function AuthServiceProvider({
 
     useEffect(() => {
         let unsubscribe;
-        import("@/api/firebaseAuth.js").then(({ subscribeToFirebaseToken, isFirebaseMode }) => {
+        import("@/api/auth/firebaseAuth.js").then(({ subscribeToFirebaseToken, isFirebaseMode }) => {
             if (isFirebaseMode) {
                 unsubscribe = subscribeToFirebaseToken((token, user) => {
                     if (token) {

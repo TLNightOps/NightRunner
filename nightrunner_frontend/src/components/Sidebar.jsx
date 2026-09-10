@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 
 import "./Sidebar.css";
-import AuthService from "../api/AuthService.js";
+import AuthService from "../api/auth/AuthService.js";
 import ApiService from "../api/ApiService.js";
 import {
     ACCESS,

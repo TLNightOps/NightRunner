@@ -1,4 +1,4 @@
-import AuthService from "./AuthService";
+import AuthService from "./auth/AuthService.js";
 
 const API_BASE =
     import.meta.env.VITE_API_BACKEND_URL ||

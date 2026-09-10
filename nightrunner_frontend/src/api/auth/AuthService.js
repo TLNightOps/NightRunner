@@ -224,7 +224,7 @@ class AuthService {
         localStorage.removeItem("firebase_id_token");
 
         try {
-            const { isFirebaseMode, firebaseLogout } = await import("@/api/firebaseAuth.js");
+            const { isFirebaseMode, firebaseLogout } = await import("@/api/auth/firebaseAuth.js");
             if (isFirebaseMode) {
                 await firebaseLogout();
                 window.location.href = "/login?loggedOut=true";

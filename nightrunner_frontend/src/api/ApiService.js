@@ -1,6 +1,6 @@
 import BackendTransport from "./BackendTransport.js";
 
-import AuthService from "./AuthService.js";
+import AuthService from "./auth/AuthService.js";
 import UserService from "./UserService.js";
 import EventService from "./EventService.js";
 import PatrolService from "./PatrolService.js";
