@@ -265,7 +265,7 @@ export default class UserService {
      */
     isSystemAdmin() {
 
-        return true;//this.getCached()?.isAdmin === true;
+        return this.getCached()?.isAdmin === true;
 
     }
 
