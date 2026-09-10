@@ -6,7 +6,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import "./EventManager.css";
-import { useEventContext } from "@/api/helpers/EventContext.jsx";
+import { useEventContext } from "@/api/helpers/event/EventContext.jsx";
 import ApiService from "../../../api/ApiService.js";
 import brandings from "@/branding/index.js";
 

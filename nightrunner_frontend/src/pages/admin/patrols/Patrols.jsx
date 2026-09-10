@@ -7,7 +7,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import ApiService from "../../../api/ApiService.js";
-import { useEventContext } from "@/api/helpers/EventContext.jsx";
+import { useEventContext } from "@/api/helpers/event/EventContext.jsx";
 
 import QRCodeModal from "./QRCodeModal.jsx";
 

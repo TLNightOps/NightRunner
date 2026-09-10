@@ -9,7 +9,7 @@ import ApiService from "../../api/ApiService.js";
 
 import {
     useEventContext
-} from "../../api/helpers/EventContext.jsx";
+} from "../../api/helpers/event/EventContext.jsx";
 
 export default function Stations() {
 

@@ -6,7 +6,7 @@ import {
 
 import {
     useEventContext
-} from "../../api/helpers/EventContext.jsx";
+} from "../../api/helpers/event/EventContext.jsx";
 
 import { getLiveScoring } from "./LiveScoringService";
 

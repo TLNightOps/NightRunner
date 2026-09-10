@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import "./AdminDashBoard.css";
 import ApiService from "../../api/ApiService.js";
-import { useEventContext } from "../../api/helpers/EventContext.jsx";
+import { useEventContext } from "../../api/helpers/event/EventContext.jsx";
 
 export default function AdminDashboard() {
     const {

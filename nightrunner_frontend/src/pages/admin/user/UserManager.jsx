@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import ApiService from "../../../api/ApiService.js";
-import { useEventContext } from "@/api/helpers/EventContext.jsx";
+import { useEventContext } from "@/api/helpers/event/EventContext.jsx";
 
 import "./UserManager.css";
 

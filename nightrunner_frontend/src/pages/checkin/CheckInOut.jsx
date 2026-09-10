@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
 import ApiService from "../../api/ApiService.js";
-import { useEventContext } from "../../api/helpers/EventContext.jsx";
+import { useEventContext } from "../../api/helpers/event/EventContext.jsx";
 
-import DataSelector from "../../api/patrol-selector/DataSelector.jsx";
+import DataSelector from "../../api/helpers/qr/DataSelector.jsx";
 
 import "./CheckInOut.css";
 
