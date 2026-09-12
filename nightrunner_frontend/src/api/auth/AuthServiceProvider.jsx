@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 
-import AuthService from "@/api/auth/AuthService.js";
+import AuthService, {
+    clearStoredFirebaseToken,
+    readStoredFirebaseToken,
+    writeStoredFirebaseToken
+} from "@/api/auth/AuthService.js";
 import ApiService from "@/api/ApiService.js";
 
 export default function AuthServiceProvider({
@@ -24,36 +28,48 @@ export default function AuthServiceProvider({
 
     useEffect(() => {
         let unsubscribe;
+        let tokenInterval;
+        let cancelled = false;
+
         import("@/api/auth/firebaseAuth.js").then(({ subscribeToFirebaseToken, isFirebaseMode, auth }) => {
-            if (isFirebaseMode) {
-                unsubscribe = subscribeToFirebaseToken(async (token, user) => {
-                    if (token) {
-                        localStorage.setItem("firebase_id_token", token);
-                        setFirebaseUser(user);
-                        // Eagerly fetch backend user profile & roles so cached user and admin rights update reactively
-                        ApiService.userData.get().catch(() => {});
-                    } else {
-                        localStorage.removeItem("firebase_id_token");
-                        setFirebaseUser(null);
-                        ApiService.userData.clear();
-                    }
-                });
+            // The effect may have been torn down while this dynamic import
+            // was in flight; do not start anything we can no longer clean up.
+            if (!isFirebaseMode || cancelled) {
+                return;
+            }
 
-                // Periodically check Firebase user token freshness every 10 minutes if user is active
-                const tokenInterval = setInterval(async () => {
-                    if (auth?.currentUser) {
-                        try {
-                            const freshToken = await auth.currentUser.getIdToken(/* forceRefresh */ false);
-                            if (freshToken) {
-                                localStorage.setItem("firebase_id_token", freshToken);
-                            }
-                        } catch (err) {
-                            console.warn("Failed periodic background token refresh:", err);
+            unsubscribe = subscribeToFirebaseToken(async (token, user) => {
+                if (token) {
+                    writeStoredFirebaseToken(token);
+                    setFirebaseUser(user);
+                    // Eagerly fetch backend user profile & roles so cached user and admin rights update reactively
+                    ApiService.userData.get().catch(() => {});
+                } else {
+                    clearStoredFirebaseToken();
+                    setFirebaseUser(null);
+                    ApiService.userData.clear();
+                }
+            });
+
+            // Belt and braces alongside onIdTokenChanged: top the stored token
+            // up every 10 minutes. This only runs while the tab is awake, so
+            // BackendTransport still resolves a live token per request rather
+            // than relying on this.
+            tokenInterval = setInterval(async () => {
+                if (auth?.currentUser) {
+                    try {
+                        const freshToken = await auth.currentUser.getIdToken(/* forceRefresh */ false);
+                        if (freshToken) {
+                            writeStoredFirebaseToken(freshToken);
                         }
+                    } catch (err) {
+                        console.warn("Failed periodic background token refresh:", err);
                     }
-                }, 10 * 60 * 1000);
+                }
+            }, 10 * 60 * 1000);
 
-                return () => clearInterval(tokenInterval);
+            if (cancelled) {
+                clearInterval(tokenInterval);
             }
         });
 
@@ -85,14 +101,16 @@ export default function AuthServiceProvider({
         }, 60 * 1000); // Check every minute
 
         return () => {
+            cancelled = true;
             if (unsubscribe) unsubscribe();
+            if (tokenInterval) clearInterval(tokenInterval);
             activityEvents.forEach((evt) => window.removeEventListener(evt, updateActivity));
             clearInterval(inactivityCheckInterval);
         };
     }, []);
 
     // Combine oidc-context auth with firebase state
-    const effectiveIsAuthenticated = auth.isAuthenticated || Boolean(localStorage.getItem("firebase_id_token")) || Boolean(firebaseUser);
+    const effectiveIsAuthenticated = auth.isAuthenticated || Boolean(readStoredFirebaseToken()) || Boolean(firebaseUser);
 
     const mergedAuth = {
         ...auth,

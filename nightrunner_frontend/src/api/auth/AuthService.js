@@ -1,5 +1,57 @@
 import { User } from "oidc-client-ts";
 
+export const FIREBASE_TOKEN_STORAGE_KEY = "firebase_id_token";
+
+
+/**
+ * Reads the cached Firebase ID token.
+ *
+ * localStorage access throws rather than returning null in some privacy
+ * modes, so every access is guarded.
+ *
+ * @returns {string|null}
+ */
+export function readStoredFirebaseToken() {
+
+    try {
+        return localStorage.getItem(FIREBASE_TOKEN_STORAGE_KEY);
+    } catch {
+        return null;
+    }
+
+}
+
+
+/**
+ * Caches the Firebase ID token.
+ *
+ * @param {string} token
+ */
+export function writeStoredFirebaseToken(token) {
+
+    try {
+        localStorage.setItem(FIREBASE_TOKEN_STORAGE_KEY, token);
+    } catch {
+        // Storage unavailable — the SDK remains the source of truth.
+    }
+
+}
+
+
+/**
+ * Removes the cached Firebase ID token.
+ */
+export function clearStoredFirebaseToken() {
+
+    try {
+        localStorage.removeItem(FIREBASE_TOKEN_STORAGE_KEY);
+    } catch {
+        // Storage unavailable — nothing to clear.
+    }
+
+}
+
+
 /**
  * Provides access to the application's OIDC authentication
  * state and operations.
@@ -66,11 +118,11 @@ class AuthService {
             return true;
         }
 
-        if (Boolean(localStorage.getItem("firebase_id_token"))) {
+        if (readStoredFirebaseToken()) {
             return true;
         }
 
-        return Boolean(this.getToken());
+        return Boolean(this.getCachedToken());
 
     }
 
@@ -132,14 +184,21 @@ class AuthService {
     //
 
     /**
-     * Gets the current OIDC access token.
+     * Gets the token to send to the Night Runner backend using the
+     * Authorization Bearer header.
      *
-     * This token is sent to the Night Runner backend
-     * using the Authorization Bearer header.
+     * In Firebase mode this asks the Firebase SDK for a live token rather
+     * than trusting the copy in localStorage. Firebase ID tokens are only
+     * valid for one hour, and the background refresh timers that keep that
+     * copy current are frozen whenever the tab is hidden or the device is
+     * asleep — so the stored copy is routinely expired by the time the user
+     * comes back. Firebase caches the token internally and only performs a
+     * network round trip when it is close to expiring, so calling this on
+     * every request is cheap.
      *
-     * @returns {string|null}
+     * @returns {Promise<string|null>}
      */
-    getToken() {
+    async getToken() {
 
         // Fast path: React context is initialised (normal in-app navigation).
         const inMemoryToken = this.auth?.user?.access_token;
@@ -147,13 +206,106 @@ class AuthService {
             return inMemoryToken;
         }
 
-        // Fallback: check Firebase token if initialized in Firebase mode
-        const firebaseToken = localStorage.getItem("firebase_id_token");
+        // Firebase mode: resolve a live token, falling back to the stored
+        // copy if the SDK is unavailable.
+        const firebaseToken = await this.getFirebaseToken();
         if (firebaseToken) {
             return firebaseToken;
         }
 
-        // Fallback: read the token oidc-client-ts persisted to sessionStorage/localStorage.
+        return this.getOidcStorageToken();
+
+    }
+
+
+    /**
+     * Synchronous best-effort token read, for callers that cannot await.
+     *
+     * This may return an expired token; use getToken() anywhere the token is
+     * actually going to be sent to the backend.
+     *
+     * @returns {string|null}
+     */
+    getCachedToken() {
+
+        const inMemoryToken = this.auth?.user?.access_token;
+        if (inMemoryToken) {
+            return inMemoryToken;
+        }
+
+        const firebaseToken = readStoredFirebaseToken();
+        if (firebaseToken) {
+            return firebaseToken;
+        }
+
+        return this.getOidcStorageToken();
+
+    }
+
+
+    /**
+     * Resolves the current Firebase ID token from the SDK, refreshing it if
+     * it has expired or is about to.
+     *
+     * @param {boolean} forceRefresh Bypass Firebase's cache and mint a new
+     * token. Used after the backend has rejected a token as expired.
+     * @returns {Promise<string|null>}
+     */
+    async getFirebaseToken(forceRefresh = false) {
+
+        const storedToken = readStoredFirebaseToken();
+
+        try {
+
+            const { isFirebaseMode, auth } =
+                await import("@/api/auth/firebaseAuth.js");
+
+            if (!isFirebaseMode || !auth?.currentUser) {
+                return storedToken;
+            }
+
+            const token =
+                await auth.currentUser.getIdToken(forceRefresh);
+
+            if (token) {
+                writeStoredFirebaseToken(token);
+                return token;
+            }
+
+        } catch (err) {
+
+            // Offline, or the refresh token has been revoked. Fall back to
+            // the stored copy and let the backend be the judge.
+            console.warn(
+                "Failed to resolve a fresh Firebase ID token:",
+                err
+            );
+
+        }
+
+        return storedToken;
+
+    }
+
+
+    /**
+     * Forces a new token to be minted, bypassing Firebase's cache.
+     *
+     * @returns {Promise<string|null>}
+     */
+    async refreshToken() {
+
+        return await this.getFirebaseToken(true);
+
+    }
+
+
+    /**
+     * Reads the token oidc-client-ts persisted to storage.
+     *
+     * @returns {string|null}
+     */
+    getOidcStorageToken() {
         try {
 
             const authority =
@@ -225,7 +377,7 @@ class AuthService {
      */
     async logout() {
 
-        localStorage.removeItem("firebase_id_token");
+        clearStoredFirebaseToken();
 
         try {
             const { isFirebaseMode, firebaseLogout } = await import("@/api/auth/firebaseAuth.js");
