@@ -575,7 +575,7 @@
 
     .qr-print-patrol-number {
         color: #000000 !important;
-        font-size: 12pt !weight;
+        font-size: 12pt !important;
         font-weight: 700 !important;
         text-align: center !important;
         margin-bottom: 4mm !important;

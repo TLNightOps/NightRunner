@@ -660,7 +660,7 @@ export default function StationEditor() {
                 )}
 
                 {taskEditor && (
-                    <div className="task-editor-container" style={{ marginTop: "1.5rem", padding: "1rem", background: "#ffffff", borderRadius: "8px", border: "2px solid #007bff" }}>
+                    <div className="task-editor-container">
                         <TaskEditor
                             task={taskEditor.task}
                             taskTypes={TASK_TYPES}

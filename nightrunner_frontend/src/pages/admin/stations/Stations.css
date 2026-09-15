@@ -61,11 +61,11 @@
 
     padding: 14px 16px;
 
-    border: 1px solid #f3b5b5;
+    border: 1px solid var(--error-border);
     border-radius: 8px;
 
-    background: #ffdcdc;
-    color: #8b0000;
+    background: var(--error-bg);
+    color: var(--error);
 }
 
 /* ==========================================
@@ -128,7 +128,7 @@
 
     box-shadow:
             0 0 0 3px
-            rgba(0, 0, 0, .06);
+            var(--focus-ring);
 }
 
 .station-count {
@@ -436,8 +436,7 @@
    Forms
    ========================================== */
 
-.station-form-grid,
-.task-form-grid {
+.station-form-grid {
     display: grid;
 
     grid-template-columns:
@@ -499,7 +498,7 @@
 
     box-shadow:
             0 0 0 3px
-            rgba(0, 0, 0, .05);
+            var(--focus-ring);
 }
 
 /* ==========================================
@@ -554,15 +553,13 @@
     padding: 8px 12px;
 
     background: transparent;
-    color: #c62828;
+    color: var(--error);
 
     border: 1px solid transparent;
 }
 
 .remove-button:hover {
-    background: rgba(198, 40, 40, .08);
-
-    border-color: rgba(198, 40, 40, .2);
+    border-color: var(--warning);
 }
 
 .primary-button:disabled,
@@ -676,89 +673,11 @@
 }
 
 .task-editor-container {
-    padding: 20px;
-
-    border-top: 1px solid var(--border);
-
+    margin-top: 1.5rem;
+    padding: 1rem;
     background: var(--page-bg);
-}
-
-.task-editor {
-    width: 100%;
-}
-
-.task-editor-heading {
-    margin-bottom: 18px;
-}
-
-.task-editor-heading h3 {
-    margin: 0;
-
-    color: var(--text-primary);
-
-    font-size: 16px;
-}
-
-.task-editor-heading p {
-    margin: 4px 0 0;
-
-    color: var(--text-secondary);
-
-    font-size: 13px;
-}
-
-/* ==========================================
-   Task Notes
-   ========================================== */
-
-.task-note {
-    margin-top: 4px;
-
-    padding: 14px 16px;
-
-    border: 1px solid var(--border);
+    border: 2px solid var(--button-bg);
     border-radius: 8px;
-
-    background: var(--card-bg);
-}
-
-.task-note strong {
-    color: var(--text-primary);
-
-    font-size: 14px;
-}
-
-.task-note p {
-    margin: 5px 0 0;
-
-    color: var(--text-secondary);
-
-    font-size: 14px;
-
-    line-height: 1.5;
-}
-
-/* ==========================================
-   Input Suffix
-   ========================================== */
-
-.input-with-suffix {
-    display: flex;
-    align-items: center;
-
-    gap: 10px;
-}
-
-.input-with-suffix input {
-    flex: 1;
-}
-
-.input-with-suffix span {
-    color: var(--text-secondary);
-
-    font-size: 14px;
-
-    white-space: nowrap;
 }
 
 /* ==========================================
@@ -868,8 +787,7 @@
         min-height: 400px;
     }
 
-    .station-form-grid,
-    .task-form-grid {
+    .station-form-grid {
         grid-template-columns: 1fr;
     }
 

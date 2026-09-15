@@ -44,6 +44,7 @@
     border: 2px dashed var(--button-bg);
     border-radius: 14px;
     background: var(--page-bg);
+    color: var(--text-primary);
     cursor: pointer;
     transition: .15s ease;
 }
@@ -107,6 +108,7 @@
     border-radius: 10px;
     font-size: 1rem;
     background: var(--card-bg);
+    color: var(--text-primary);
 }
 
 .manual-selection select:focus {

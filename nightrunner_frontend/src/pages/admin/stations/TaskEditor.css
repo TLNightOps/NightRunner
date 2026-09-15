@@ -1,0 +1,303 @@
+/* ==========================================
+   Task Editor Layout
+   ========================================== */
+
+.task-editor-layout {
+    display: grid;
+
+    grid-template-columns:
+        1fr
+        300px;
+
+    gap: 20px;
+}
+
+.task-editor {
+    width: 100%;
+}
+
+.task-editor-heading {
+    margin-bottom: 18px;
+}
+
+.task-editor-heading h3 {
+    margin: 0;
+
+    color: var(--text-primary);
+
+    font-size: 16px;
+}
+
+.task-editor-heading p {
+    margin: 4px 0 0;
+
+    color: var(--text-secondary);
+
+    font-size: 13px;
+}
+
+/* ==========================================
+   Task Form
+   ========================================== */
+
+.task-form-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 18px;
+}
+
+.task-notes,
+.task-score-weight {
+    margin-top: .5rem;
+}
+
+.checkbox-field {
+    grid-column: 1 / -1;
+
+    display: flex;
+    align-items: center;
+
+    gap: .5rem;
+
+    margin-top: .5rem;
+}
+
+.checkbox-field input {
+    width: auto;
+}
+
+/* ==========================================
+   Input Suffix
+   ========================================== */
+
+.input-with-suffix {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+}
+
+.input-with-suffix input {
+    flex: 1;
+}
+
+.input-with-suffix span {
+    color: var(--text-secondary);
+
+    font-size: 14px;
+
+    white-space: nowrap;
+}
+
+/* ==========================================
+   Task Notes
+   ========================================== */
+
+.task-note {
+    margin-top: 4px;
+
+    padding: 14px 16px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    background: var(--card-bg);
+}
+
+.task-note strong {
+    color: var(--text-primary);
+
+    font-size: 14px;
+}
+
+.task-note p {
+    margin: 5px 0 0;
+
+    color: var(--text-secondary);
+
+    font-size: 14px;
+
+    line-height: 1.5;
+}
+
+/* ==========================================
+   Multiple Choice
+   ========================================== */
+
+.multiple-choice-field {
+    grid-column: 1 / -1;
+
+    gap: 8px;
+}
+
+.options-editor-list {
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.option-editor-row {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+}
+
+.option-label-input {
+    flex: 2;
+
+    padding: 6px;
+}
+
+.option-points-input {
+    flex: 1;
+
+    padding: 6px;
+}
+
+.remove-option-button,
+.add-option-button {
+    border-radius: 4px;
+
+    cursor: pointer;
+}
+
+.remove-option-button {
+    padding: 6px 10px;
+
+    background: var(--error);
+    color: var(--header-text);
+
+    border: none;
+}
+
+.add-option-button {
+    align-self: flex-start;
+
+    margin-top: 4px;
+
+    padding: 6px 12px;
+
+    background: var(--success);
+    color: var(--header-text);
+
+    border: none;
+}
+
+/* ==========================================
+   Scoring Preview
+   ========================================== */
+
+.scoring-preview-box {
+    margin-top: 1rem;
+
+    padding: .85rem;
+
+    background: var(--page-bg);
+
+    border: 1px solid var(--border);
+    border-radius: 6px;
+
+    color: var(--text-primary);
+}
+
+.scoring-preview-box > strong {
+    display: block;
+
+    margin-bottom: .35rem;
+
+    color: var(--text-primary);
+
+    font-size: .9em;
+}
+
+.scoring-preview-content {
+    color: var(--text-primary);
+
+    font-size: .85em;
+}
+
+.scoring-preview-disabled {
+    color: var(--error);
+
+    font-size: .85em;
+}
+
+/* ==========================================
+   Guidance
+   ========================================== */
+
+.task-guidance-sidebar {
+    padding: 16px;
+
+    background: var(--page-bg);
+
+    border-left: 2px solid var(--border);
+    border-radius: 8px;
+
+    color: var(--text-primary);
+}
+
+.task-guidance-sidebar h4 {
+    margin: 0 0 10px;
+
+    color: var(--link);
+
+    font-size: 1rem;
+}
+
+.task-guidance-sidebar > p {
+    margin: 0;
+
+    color: var(--text-secondary);
+
+    font-size: .88rem;
+
+    line-height: 1.45;
+}
+
+.task-guidance-tip {
+    margin-top: 16px;
+
+    padding-top: 12px;
+
+    border-top: 1px solid var(--border);
+
+    color: var(--text-secondary);
+
+    font-size: .82rem;
+}
+
+.task-guidance-tip strong {
+    color: var(--text-primary);
+}
+
+.task-guidance-tip p {
+    margin: 4px 0 0;
+
+    color: var(--text-secondary);
+}
+
+/* ==========================================
+   Responsive
+   ========================================== */
+
+@media (max-width: 900px) {
+
+    .task-editor-layout {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+@media (max-width: 768px) {
+
+    .task-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+}

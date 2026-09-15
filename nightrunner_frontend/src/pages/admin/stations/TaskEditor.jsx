@@ -1,4 +1,4 @@
-import "./Stations.css";
+import "./TaskEditor.css";
 
 const DEFAULT_TASK_TYPES = [
     "Timed Challenge",
@@ -61,11 +61,27 @@ export default function TaskEditor({
         }
     };
 
-    const currentGuidance = TASK_GUIDANCE[task.type] || TASK_GUIDANCE["Score Challenge"];
+    const currentGuidance =
+        TASK_GUIDANCE[task.type] ||
+        TASK_GUIDANCE["Score Challenge"];
+
+    const currentOptions = task.options || [
+        {
+            label: "Option A (Full Points)",
+            value: task.maxScore || 10
+        },
+        {
+            label: "Option B (Partial Points)",
+            value: Math.floor((task.maxScore || 10) / 2)
+        },
+        {
+            label: "Option C (No Points)",
+            value: 0
+        }
+    ];
 
     return (
-
-        <div className="task-editor-layout" style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "20px" }}>
+        <div className="task-editor-layout">
 
             <div className="task-editor">
 
@@ -159,7 +175,7 @@ export default function TaskEditor({
 
                 </label>
 
-                <label className="form-field task-notes" style={{ marginTop: "0.5rem" }}>
+                <label className="form-field task-notes">
 
                     <span>
                         Scorer Notes / Ambiguity Resolver (Optional)
@@ -179,7 +195,7 @@ export default function TaskEditor({
 
                 </label>
 
-                <label className="form-field" style={{ marginTop: "0.5rem" }}>
+                <label className="form-field task-score-weight">
 
                     <span>
                         Task Score Weight (Multiplier)
@@ -200,7 +216,7 @@ export default function TaskEditor({
 
                 </label>
 
-                <label className="form-field checkbox-field" style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem" }}>
+                <label className="form-field checkbox-field">
 
                     <input
                         type="checkbox"
@@ -282,35 +298,38 @@ export default function TaskEditor({
 
                 {task.type === "Multiple Choice" && (
 
-                    <div className="form-field" style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div className="form-field multiple-choice-field">
 
                         <span>
                             Multiple Choice Options & Point Values
                         </span>
 
-                        <div className="options-editor-list" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div className="options-editor-list">
 
-                            {(task.options || [
-                                { label: "Option A (Full Points)", value: task.maxScore || 10 },
-                                { label: "Option B (Partial Points)", value: Math.floor((task.maxScore || 10) / 2) },
-                                { label: "Option C (No Points)", value: 0 }
-                            ]).map((opt, idx) => (
+                            {currentOptions.map((opt, idx) => (
 
-                                <div key={idx} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                <div
+                                    key={idx}
+                                    className="option-editor-row"
+                                >
 
                                     <input
                                         type="text"
                                         placeholder={`Option ${idx + 1} Label`}
                                         value={opt.label || ""}
-                                        style={{ flex: "2", padding: "6px" }}
-                                        onChange={(e) => {
-                                            const newOpts = [...(task.options || [
-                                                { label: "Option A (Full Points)", value: task.maxScore || 10 },
-                                                { label: "Option B (Partial Points)", value: Math.floor((task.maxScore || 10) / 2) },
-                                                { label: "Option C (No Points)", value: 0 }
-                                            ])];
-                                            newOpts[idx] = { ...newOpts[idx], label: e.target.value };
-                                            update("options", newOpts);
+                                        className="option-label-input"
+                                        onChange={event => {
+                                            const newOpts = [...currentOptions];
+
+                                            newOpts[idx] = {
+                                                ...newOpts[idx],
+                                                label: event.target.value
+                                            };
+
+                                            update(
+                                                "options",
+                                                newOpts
+                                            );
                                         }}
                                     />
 
@@ -318,30 +337,39 @@ export default function TaskEditor({
                                         type="number"
                                         placeholder="Points"
                                         value={opt.value ?? ""}
-                                        style={{ flex: "1", padding: "6px" }}
-                                        onChange={(e) => {
-                                            const newOpts = [...(task.options || [
-                                                { label: "Option A (Full Points)", value: task.maxScore || 10 },
-                                                { label: "Option B (Partial Points)", value: Math.floor((task.maxScore || 10) / 2) },
-                                                { label: "Option C (No Points)", value: 0 }
-                                            ])];
-                                            newOpts[idx] = { ...newOpts[idx], value: Number(e.target.value) };
-                                            update("options", newOpts);
+                                        className="option-points-input"
+                                        onChange={event => {
+                                            const newOpts = [...currentOptions];
+
+                                            newOpts[idx] = {
+                                                ...newOpts[idx],
+                                                value: Number(event.target.value)
+                                            };
+
+                                            update(
+                                                "options",
+                                                newOpts
+                                            );
                                         }}
                                     />
 
                                     <button
                                         type="button"
-                                        style={{ padding: "6px 10px", background: "#dc3545", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                                        className="remove-option-button"
                                         onClick={() => {
-                                            const currentOpts = task.options || [
-                                                { label: "Option A (Full Points)", value: task.maxScore || 10 },
-                                                { label: "Option B (Partial Points)", value: Math.floor((task.maxScore || 10) / 2) },
-                                                { label: "Option C (No Points)", value: 0 }
-                                            ];
-                                            if (currentOpts.length <= 1) return;
-                                            const newOpts = currentOpts.filter((_, i) => i !== idx);
-                                            update("options", newOpts);
+                                            if (currentOptions.length <= 1) {
+                                                return;
+                                            }
+
+                                            const newOpts =
+                                                currentOptions.filter(
+                                                    (_, i) => i !== idx
+                                                );
+
+                                            update(
+                                                "options",
+                                                newOpts
+                                            );
                                         }}
                                     >
                                         ✕
@@ -353,15 +381,21 @@ export default function TaskEditor({
 
                             <button
                                 type="button"
-                                style={{ alignSelf: "flex-start", marginTop: "4px", padding: "6px 12px", background: "#28a745", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                                className="add-option-button"
                                 onClick={() => {
-                                    const currentOpts = task.options || [
-                                        { label: "Option A (Full Points)", value: task.maxScore || 10 },
-                                        { label: "Option B (Partial Points)", value: Math.floor((task.maxScore || 10) / 2) },
-                                        { label: "Option C (No Points)", value: 0 }
+                                    const newOpts = [
+                                        ...currentOptions,
+                                        {
+                                            label:
+                                                `Option ${currentOptions.length + 1}`,
+                                            value: 0
+                                        }
                                     ];
-                                    const newOpts = [...currentOpts, { label: `Option ${currentOpts.length + 1}`, value: 0 }];
-                                    update("options", newOpts);
+
+                                    update(
+                                        "options",
+                                        newOpts
+                                    );
                                 }}
                             >
                                 ➕ Add Choice Option
@@ -395,7 +429,6 @@ export default function TaskEditor({
                     </label>
 
                 )}
-
 
                 {task.type === "Checkpoint" && (
 
@@ -447,48 +480,92 @@ export default function TaskEditor({
 
                 )}
 
-                <div className="scoring-preview-box" style={{ marginTop: "1rem", padding: "0.85rem", background: "#f8f9fa", borderRadius: "6px", border: "1px solid #e9ecef" }}>
-                    <strong style={{ fontSize: "0.9em", color: "#495057", display: "block", marginBottom: "0.35rem" }}>
+                <div className="scoring-preview-box">
+                    <strong>
                         📊 Task Scoring Calculation Preview (Example Data)
                     </strong>
                     {task.active === false ? (
-                        <span style={{ color: "#dc3545", fontSize: "0.85em" }}>
-                            🚫 Task disabled for scoring: Contributes <strong>0 points</strong> to station total.
+                        <span className="scoring-preview-disabled">
+                            🚫 Task disabled for scoring: Contributes{" "}
+                            <strong>0 points</strong> to station total.
                         </span>
                     ) : (
-                        <div style={{ fontSize: "0.85em", color: "#343a40" }}>
+                        <div className="scoring-preview-content">
                             {task.maxScore ? (
                                 <span>
-                                    Example Task Raw Score: <strong>{Math.round(task.maxScore * 0.85)}</strong> / {task.maxScore} (85%)<br />
-                                    Weighted Task Contribution = Raw ({Math.round(task.maxScore * 0.85)}) × Task Weight ({task.scoreWeight ?? 1.0}) = <strong>{(Math.round(task.maxScore * 0.85) * (task.scoreWeight ?? 1.0)).toFixed(1)} points</strong>
+                                    Example Task Raw Score:{" "}
+                                    <strong>
+                                        {Math.round(task.maxScore * 0.85)}
+                                    </strong>{" "}
+                                    / {task.maxScore}
+                                    {" "} (85%)
+                                    <br />
+                                    Weighted Task Contribution = Raw (
+                                    {Math.round(task.maxScore * 0.85)}
+                                    ) × Task Weight (
+                                    {task.scoreWeight ?? 1.0}
+                                    ) ={" "}
+                                    <strong>
+                                        {(
+                                            Math.round(
+                                                task.maxScore * 0.85
+                                            ) *
+                                            (task.scoreWeight ?? 1.0)
+                                        ).toFixed(1)}
+                                        {" "}points
+                                    </strong>
                                 </span>
                             ) : (
                                 <span>
-                                    Example Task Raw Score: <strong>85</strong> points<br />
-                                    Weighted Task Contribution = Raw (85) × Task Weight ({task.scoreWeight ?? 1.0}) = <strong>{(85 * (task.scoreWeight ?? 1.0)).toFixed(1)} points</strong>
+                                    Example Task Raw Score:{" "}
+                                    <strong>85</strong>{" "}
+                                    points
+                                    <br />
+                                    Weighted Task Contribution = Raw (85)
+                                    × Task Weight (
+                                    {task.scoreWeight ?? 1.0}
+                                    ) ={" "}
+                                    <strong>
+                                        {(
+                                            85 *
+                                            (task.scoreWeight ?? 1.0)
+                                        ).toFixed(1)}
+                                        {" "}points
+                                    </strong>
                                 </span>
+
                             )}
+
                         </div>
+
                     )}
+
                 </div>
 
             </div>
 
-            <aside className="task-guidance-sidebar" style={{ background: "#f8f9fa", borderLeft: "2px solid #e9ecef", padding: "16px", borderRadius: "8px" }}>
-                <h4 style={{ margin: "0 0 10px 0", color: "#007bff" }}>💡 {currentGuidance.title}</h4>
-                <p style={{ fontSize: "0.88rem", color: "#495057", lineHeight: "1.45" }}>
+            <aside className="task-guidance-sidebar">
+                <h4>
+                    💡 {currentGuidance.title}
+                </h4>
+
+                <p>
                     {currentGuidance.text}
                 </p>
-                <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid #dee2e6", fontSize: "0.82rem", color: "#6c757d" }}>
-                    <strong>💡 Scorer Note Tip:</strong>
-                    <p style={{ margin: "4px 0 0 0" }}>
-                        Fill out the <em>Scorer Notes</em> field above to clarify rules or instructions for station judges. If provided, notes are displayed in a callout bubble on the scoring page.
+
+                <div className="task-guidance-tip">
+                    <strong>
+                        💡 Scorer Note Tip:
+                    </strong>
+
+                    <p>
+                        Fill out the <em>Scorer Notes</em> field above
+                        to clarify rules or instructions for station
+                        judges. If provided, notes are displayed in a
+                        callout bubble on the scoring page.
                     </p>
                 </div>
             </aside>
-
         </div>
-
     );
-
 }
