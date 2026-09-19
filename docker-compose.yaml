@@ -182,13 +182,14 @@ services:
           description = EXCLUDED.description, 
           rounding_precision = EXCLUDED.rounding_precision;
 
-        INSERT INTO users (id, external_id, username, email, display_name)
-        VALUES ('u-admin-id', 'admin-user-id', 'adminuser', 'admin@example.com', 'Admin User')
+        INSERT INTO users (id, external_id, username, email, display_name, is_admin)
+        VALUES ('u-admin-id', 'admin-user-id', 'adminuser', 'admin@example.com', 'Admin User', TRUE)
         ON CONFLICT (id) DO UPDATE SET 
           external_id = EXCLUDED.external_id, 
           username = EXCLUDED.username, 
           email = EXCLUDED.email, 
-          display_name = EXCLUDED.display_name;
+          display_name = EXCLUDED.display_name,
+          is_admin = EXCLUDED.is_admin;
 
         INSERT INTO users (id, external_id, username, email, display_name)
         VALUES ('u-org-id', 'organizer-user-id', 'organizeruser', 'organizer@example.com', 'Organizer User')

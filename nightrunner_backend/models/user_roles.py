@@ -32,3 +32,36 @@ def roles_to_map(roles):
             roles_map[role] = role
 
     return roles_map
+
+
+# Roles that may create, edit or delete patrols within an event. Scoring roles
+# are deliberately absent: the scoring team reads patrol data but does not own
+# it. Mirrors `isPatrolManager` in the frontend's UserService.
+PATROL_WRITE_ROLES = ("event-admin", "patrol-management")
+
+# Roles that carry system-wide authority regardless of event.
+GLOBAL_ADMIN_ROLES = ("admin", "system-admin")
+
+
+def can_manage_patrols(roles, is_admin=False, event_id=None):
+    """Whether a user may create, edit or delete patrols in an event.
+
+    Reads are open to any authenticated user; only mutation is restricted.
+
+    :param roles: iterable of stored role strings, as `req.context.roles` holds.
+    :param is_admin: the user's system administrator flag.
+    :param event_id: the event whose patrols are being changed.
+    :returns: True if the user may change the event's patrols.
+    """
+    if is_admin:
+        return True
+
+    roles_map = roles_to_map(roles)
+
+    if any(role in roles_map for role in GLOBAL_ADMIN_ROLES):
+        return True
+
+    if not event_id:
+        return False
+
+    return roles_map.get(event_id) in PATROL_WRITE_ROLES
