@@ -104,6 +104,9 @@ function Sidebar({ open, close }) {
     const dashboardLink =
         links.find(route => route.path === "/dashboard");
 
+    const helpLink =
+        links.find(route => route.path === "/help");
+
     // Group definitions
     const groupsConfig = [
         {
@@ -315,6 +318,12 @@ function Sidebar({ open, close }) {
                             </section>
                         );
                     })}
+
+                    {helpLink && (
+                        <section className="sidebar-section sidebar-section-dashboard">
+                            {renderLink(helpLink)}
+                        </section>
+                    )}
 
                 </nav>
 

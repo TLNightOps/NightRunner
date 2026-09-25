@@ -1,5 +1,6 @@
 import Dashboard from "./pages/Dashboard.jsx";
 import Me from "./pages/Me.jsx";
+import Help from "./pages/help/Help.jsx";
 import Events from "./pages/user/Events.jsx";
 import Patrols from "./pages/user/Patrols.jsx";
 import Stations from "./pages/user/Stations.jsx";
@@ -135,6 +136,12 @@ export const AppRoutes = [
     {
         path: "/me",
         element: Me,
+        access: ACCESS.USER
+    },
+    {
+        path: "/help",
+        element: Help,
+        name: "Help & Docs",
         access: ACCESS.USER
     },
 
