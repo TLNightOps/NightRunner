@@ -1,8 +1,6 @@
 """Admin endpoints for minting, listing and revoking public event links.
 
-Authenticated and admin-only. Follows the inline role check used by
-VisitResetResource rather than introducing a new authorization mechanism —
-minting a credential that bypasses login is not something a signed-in volunteer
+Authenticated and admin-only, via `transport/permissions.py` — minting a credential that bypasses login is not something a signed-in volunteer
 should be able to do.
 """
 
@@ -11,6 +9,8 @@ import falcon
 from nightrunner_backend.app_context import get_driver
 from nightrunner_backend.drivers.store.event_access_tokens import EventAccessTokensStore
 from nightrunner_backend.drivers.store.public_board import PublicBoardStore
+from nightrunner_backend.models.user_roles import EVENT_ADMIN
+from nightrunner_backend.transport.permissions import require_event_role
 from nightrunner_backend.models.event_access_token import (
     VALID_SCOPES,
     EventAccessToken,
@@ -21,22 +21,11 @@ from nightrunner_backend.models.event_access_token import (
 
 
 def _require_admin(req: falcon.Request, event_id: str) -> dict:
-    user = getattr(req.context, "user", None) or {}
-    roles = getattr(req.context, "roles", []) or []
-
-    is_admin = bool(user.get("is_admin")) or bool(user.get("isAdmin"))
-    if not is_admin:
-        if isinstance(roles, dict):
-            is_admin = roles.get(event_id) in ("admin", "event-admin")
-        else:
-            is_admin = "admin" in roles or "system-admin" in roles or "event-admin" in roles
-
-    if not is_admin:
-        raise falcon.HTTPForbidden(
-            title="Admin required",
-            description="Only an event admin can manage public links.",
-        )
-    return user
+    return require_event_role(
+        req, event_id, (EVENT_ADMIN,),
+        title="Admin required",
+        description="Only an event admin can manage public links.",
+    )
 
 
 class EventAccessTokensResource:

@@ -33,7 +33,8 @@ async def seed_user(user_id="test-user-id", ext_id="test-user-id", is_admin=Fals
             INSERT INTO user_roles (user_id, role)
             VALUES (:user_id, :role)
             """,
-            {"user_id": user_id, "role": role},
+            # Stored the way production stores event roles: "<event_id>:<role>".
+            {"user_id": user_id, "role": "{}:{}".format(event_id, role)},
         )
 
 
@@ -71,8 +72,8 @@ class TestRosterAuthAndCompliance:
         assert resp.status == falcon.HTTP_201
 
     async def test_non_admin_forbidden_from_adding_attendee(self, test_client, token_factory):
-        await seed_user(role="event-ops")
-        headers = token_factory(roles={"event-1": "event-ops"}, is_admin=False)
+        await seed_user(role="gate-checkin")
+        headers = token_factory(roles={"event-1": "gate-checkin"}, is_admin=False)
         resp = await test_client.simulate_post(
             "/v1/events/event-1/attendees",
             headers=headers,

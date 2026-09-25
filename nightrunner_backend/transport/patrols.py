@@ -12,7 +12,7 @@ def _require_patrol_manager(req: falcon.Request, event_id):
     Reading patrols stays open to any authenticated user; the scoring team and
     station staff need the roster to do their jobs. Creating, editing and
     deleting are the event's own business, so they stay with system admins,
-    event admins and patrol management.
+    event admins, patrol management and the command center.
     """
     user = getattr(req.context, "user", None) or {}
     roles = getattr(req.context, "roles", None) or []
@@ -23,8 +23,8 @@ def _require_patrol_manager(req: falcon.Request, event_id):
     raise falcon.HTTPForbidden(
         title="Patrol Management Required",
         description=(
-            "Only system admins, event admins and patrol management can "
-            "create, edit or delete patrols."
+            "Only system admins, event admins, patrol management and the "
+            "command center can create, edit or delete patrols."
         ),
     )
 

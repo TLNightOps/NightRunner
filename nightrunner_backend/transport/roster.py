@@ -2,6 +2,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 import falcon
+
+from nightrunner_backend.models.user_roles import EVENT_ADMIN
+from nightrunner_backend.transport.permissions import require_event_role, require_role_on_any_event
 import uuid6
 
 from nightrunner_backend.app_context import get_driver
@@ -28,23 +31,13 @@ def _require_object(payload: Any) -> Dict[str, Any]:
 
 
 def _require_admin(req: falcon.Request, event_id: str = None) -> dict:
-    user = getattr(req.context, "user", None) or {}
-    roles = getattr(req.context, "roles", []) or []
-
-    is_admin = bool(user.get("is_admin")) or bool(user.get("isAdmin"))
-    if not is_admin:
-        if isinstance(roles, dict) and event_id:
-            role = roles.get(event_id)
-            is_admin = role in ("admin", "event-admin")
-        else:
-            is_admin = "admin" in roles or "system-admin" in roles or "event-admin" in roles
-
-    if not is_admin:
-        raise falcon.HTTPForbidden(
-            title="Admin required",
-            description="Only Event-Admin or System Admin roles can add troops or attendees.",
-        )
-    return user
+    """Event admins only. Troops are shared across events, so without an
+    event an event admin of any event may add one."""
+    title = "Admin required"
+    description = "Only Event-Admin or System Admin roles can add troops or attendees."
+    if event_id:
+        return require_event_role(req, event_id, (EVENT_ADMIN,), title, description)
+    return require_role_on_any_event(req, (EVENT_ADMIN,), title, description)
 
 
 class TroopsResource:
