@@ -219,3 +219,32 @@ async def test_event_admin_can_manage_public_links(test_client, as_role):
     )
 
     assert resp.status == falcon.HTTP_200
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", ["gate-checkin", "scoring-team", "patrol-management", "user"])
+async def test_only_event_admins_can_import_a_roster(test_client, as_role, role):
+    _, event_id, _ = await _setup(test_client, as_role)
+
+    headers = await as_role(roles=["{}:{}".format(event_id, role)])
+    for step in ("preview", "apply"):
+        resp = await test_client.simulate_post(
+            "/v1/events/{}/roster/{}".format(event_id, step),
+            json={"rows": []},
+            headers=headers,
+        )
+        assert resp.status == falcon.HTTP_403, step
+
+
+@pytest.mark.asyncio
+async def test_event_admin_can_preview_a_roster(test_client, as_role):
+    _, event_id, _ = await _setup(test_client, as_role)
+
+    headers = await as_role(roles=["{}:event-admin".format(event_id)])
+    resp = await test_client.simulate_post(
+        "/v1/events/{}/roster/preview".format(event_id),
+        json={"rows": []},
+        headers=headers,
+    )
+
+    assert resp.status == falcon.HTTP_200

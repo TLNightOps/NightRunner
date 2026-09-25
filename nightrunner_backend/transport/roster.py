@@ -203,6 +203,7 @@ class EventAttendeeResource:
     """DELETE /v1/events/{event_id}/attendees/{attendee_id}"""
 
     async def on_delete(self, req: falcon.Request, resp: falcon.Response, event_id: str, attendee_id: str):
+        _require_admin(req, event_id)
         store = RosterStore(get_driver())
         attendee = await store.get_attendee(attendee_id)
         if not attendee or attendee.event_id != event_id:
@@ -237,10 +238,12 @@ class RosterImportPreviewResource:
     """
     POST /v1/events/{event_id}/roster/preview
 
-    Takes parsed sheet rows and returns a plan. Writes nothing.
+    Takes parsed sheet rows and returns a plan. Writes nothing, but the plan
+    carries the existing roster (youth names), so it is admin-only too.
     """
 
     async def on_post(self, req: falcon.Request, resp: falcon.Response, event_id: str):
+        _require_admin(req, event_id)
         payload = _require_object(await req.get_media())
         rows = payload.get("rows")
         if not isinstance(rows, list):
@@ -266,6 +269,7 @@ class RosterImportApplyResource:
     """
 
     async def on_post(self, req: falcon.Request, resp: falcon.Response, event_id: str):
+        _require_admin(req, event_id)
         payload = _require_object(await req.get_media())
         rows = payload.get("rows")
         if not isinstance(rows, list):
