@@ -4,6 +4,17 @@ import falcon
 from nightrunner_backend.app_context import get_driver
 from nightrunner_backend.drivers.store.scores import ScoresStore
 from nightrunner_backend.models.score import Score
+from nightrunner_backend.models.user_roles import SCORING_ROLES
+from nightrunner_backend.transport.permissions import require_event_role
+
+
+def _require_scoring_team(req: falcon.Request, event_id):
+    """Scores are entered, corrected and finalized by the scoring team."""
+    return require_event_role(
+        req, event_id, SCORING_ROLES,
+        title="Scoring Team Required",
+        description="Only the scoring team, event admins and system admins can change scores.",
+    )
 
 
 def _extract_submitted_text(val: Any) -> Optional[str]:
@@ -118,6 +129,8 @@ class ScoresResource:
         if not isinstance(payload, dict):
             raise falcon.HTTPBadRequest(description="Request body must be a JSON object.")
 
+        _require_scoring_team(req, payload.get("eventId"))
+
         if payload.get("action") == "deactivate":
             event_id = payload.get("eventId")
             station_id = payload.get("stationId")
@@ -224,6 +237,7 @@ class ScoreResource:
         existing = await store.get(scoreId)
         if not existing:
             raise falcon.HTTPNotFound()
+        _require_scoring_team(req, existing.event_id)
 
         payload = await req.get_media()
         if not isinstance(payload, dict):
@@ -266,6 +280,7 @@ class FinalizedResultsResource:
         if not isinstance(payload, dict):
             raise falcon.HTTPBadRequest(description="Request body must be a JSON object.")
         event_id = payload.get("eventId")
+        _require_scoring_team(req, event_id)
         results = payload.get("results")
         if not event_id or not isinstance(results, list):
             raise falcon.HTTPBadRequest(description="eventId string and results list are required.")

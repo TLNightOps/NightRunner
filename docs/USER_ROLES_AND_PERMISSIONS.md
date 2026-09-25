@@ -1,100 +1,76 @@
 # NightRunner Roles, Permissions & User Assignments
 
-This document details the user roles, access control hierarchy, event visibility, assignment permissions, and feature capabilities in NightRunner.
+The role plan agreed 2026-09-24 (#236). This document is the source of truth for
+who can do what; the code mirrors it in two places, which must change together:
+
+- **Frontend:** `nightrunner_frontend/src/lib/roles.js` (menus, route access, the
+  User Manager's role picker and descriptions). Route access is menu-only: any
+  signed-in user can still type a URL, so the backend is what actually stops them.
+- **Backend:** `nightrunner_backend/models/user_roles.py` (`has_event_role`),
+  called through `transport/permissions.py` on write endpoints.
+
+The in-app **Help & Docs** page (`/help`, content in
+`src/pages/help/helpContent.js`) explains the same matrix to volunteers.
 
 ---
 
-## Access Control & Role Hierarchy
+## How roles are stored
 
-```mermaid
-flowchart TD
-    SA["System Admin"] --> EA["Event Admin"]
-    EA --> EO["Event Operations"]
-    EA --> PM["Patrol Management"]
-    EA --> SL["Station Lead"]
-    EA --> ST["Scoring Lead / Team"]
-    SL --> SV["Station Volunteer"]
-```
+- **System Admin** is a flag on the user (`users.is_admin`), not a role. It passes
+  every check for every event.
+- **Event roles** are stored one per user per event in `user_roles.role` as
+  `"<event_id>:<role>"`. Clients see them as an `{eventId: role}` map
+  (`roles_to_map`). Never test the stored strings with `in` — that bug is why event
+  admins could not use several admin endpoints before #236.
+- A role only counts while its event is selected.
 
----
+## The roles
 
-## Role Definitions & Scope
+| Role | Key | What it is for |
+|---|---|---|
+| System Admin | `users.is_admin` | Full access to all functions of the program, across every event. |
+| Event Admin | `event-admin` | Runs one event: stations, patrols, roster, users, gate, scoring, reports. |
+| Scoring Team | `scoring-team` | Enters, reviews, reopens and corrects scores at the scoring center; Score Finalizer and reports. |
+| Station Lead | `station-lead` | Checks patrols in and out at any station. Same as Station Volunteer for now; extra permissions planned. |
+| Station Volunteer | `station-volunteer` | Checks patrols in and out at any station. No access to scoring. |
+| Command Center | `command-center` | Tracks patrols on the night; creates and edits patrols. |
+| Gate Check-In | `gate-checkin` | Gate Check-In and the Arrivals Dashboard. |
+| Patrol Management | `patrol-management` | Creates and edits patrols. |
+| Standard User | `user` | Signed in with no event role: lookups and Live Status. |
 
-### 1. System Admin
-- **Scope**: Global system-wide access.
-- **Event Visibility**: Can view and access **all events** (including newly created events before any Event Admin is assigned).
-- **Permissions**:
-  - Full system configuration & user management (approve pending users, assign System Admin status, block users).
-  - Assign Event Admins, Scoring Leads, Station Leads, and Volunteers to any event.
-  - Full access to all stations, scoring data, override controls, and report generation.
+Renamed by migration `027_rename_event_roles.sql`: `event-ops` → `gate-checkin`,
+`scoring-lead` and `scoring-center` → `scoring-team`, `scorer` and `volunteer` →
+`station-volunteer`.
 
-### 2. Event Admin
-- **Scope**: Event-specific access.
-- **Event Visibility**: Can view and access only events where they are assigned as Event Admin (or System Admin).
-- **Permissions**:
-  - Manage event details, patrols, stations, and configurations.
-  - Assign additional users to event roles (Scoring Lead, Station Lead, Volunteer) and station assignments.
-  - Full station activity timing & scoring capabilities across all stations in the event.
-  - Access to Event Score Finalizer, calculation adjustments, and all score report generation.
-
-### 3. Event Operations (`event-ops`)
-- **Scope**: Event-specific gate check-in & arrivals logistics.
-- **Event Visibility**: Can view and access assigned events.
-- **Permissions**:
-  - Access to the **Arrivals Dashboard** (`/arrivals/dashboard`) and **Gate Check-In** screen (`/arrivals`).
-  - Record participant arrivals by troop or individual.
-
-### 4. Patrol Management (`patrol-management`)
-- **Scope**: Event-specific patrol registration and roster management.
-- **Event Visibility**: Can view and access assigned events.
-- **Permissions**:
-  - Access to the **Patrol Manager** page (`/admin/patrols`).
-  - Scan patrol QR codes to quickly view/edit patrol information.
-  - Create, update, and manage patrol registrations and roster member assignments.
-
-### 5. Scoring Lead / Scoring Team
-- **Scope**: Event-specific scoring operations.
-- **Event Visibility**: Can view and access assigned events.
-- **Permissions**:
-  - Review scores across all stations for the event.
-  - Perform manual paper-entry score submissions for any station.
-  - Access Event Score Finalizer page to calculate, adjust, and finalize event scores.
-  - Generate all scoring reports (Scoring Lead, Event Admin, System Admin).
-
-### 6. Station Lead
-- **Scope**: Event-specific & station-specific operations.
-- **Event Visibility**: Can view and access assigned events.
-- **Permissions**:
-  - Assign and manage volunteers specifically for their assigned station(s).
-  - Perform station check-in/check-out and activity scoring at their assigned station.
-  - Override or reopen completed station attempts for their station (beyond the 5-minute volunteer self-reset window).
-
-### 7. Station Volunteer / Scorer
-- **Scope**: Station-level scoring tasks.
-- **Event Visibility**: Can view and access assigned events.
-- **Permissions**:
-  - Check in / check out patrols at assigned stations.
-  - Record activity timing, task completions, and judge notes on the scoring page.
-  - Self-reopen/reset station attempts within a 5-minute window following completion (requires Station Lead authorization beyond 5 minutes).
-  - **Scoring Privacy Restriction**: Cannot view point weights, score values, or final event rankings.
+Scores are entered at the scoring center by specific adults on the Scoring Team,
+not in the field.
 
 ---
 
-## Detailed Permissions & Capabilities Matrix
+## Permissions matrix
 
-| Feature / Action | System Admin | Event Admin | Event Ops | Patrol Mgmt | Scoring Lead / Team | Station Lead | Station Volunteer |
-|------------------|--------------|-------------|-----------|-------------|---------------------|--------------|-------------------|
-| **View All System Events** | ✅ | ❌ (Assigned only) | ❌ (Assigned only) | ❌ (Assigned only) | ❌ (Assigned only) | ❌ (Assigned only) | ❌ (Assigned only) |
-| **Arrivals & Gate Check-In** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Patrol Manager & QR Scanning** | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **Assign Event Admins** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Assign Station Leads & Staff** | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ (Their station) | ❌ |
-| **View Point Weights & Point Totals** | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| **Manual Score Entry (Any Station)** | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ (Their station) | ❌ (Their station) |
-| **Reopen Completed Attempt (<= 5 mins)** | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Reopen Completed Attempt (> 5 mins)** | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ (Their station) | ❌ |
-| **Access Score Finalizer Page** | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| **Generate Scoring Reports** | ✅ | ✅ | ❌ | ❌ | ✅ (Scoring Lead) | ❌ | ❌ |
+✅ = allowed · — = not allowed · **(server)** = also enforced by the backend
+
+| Action | System Admin | Event Admin | Scoring Team | Station Lead / Volunteer | Command Center | Gate Check-In | Patrol Mgmt | Standard User |
+|---|---|---|---|---|---|---|---|---|
+| See events, stations, patrols (incl. phone and radio details) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Live Status | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Check patrols in / out at any station **(server)** | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| Enter scores **(server)** | ✅ | ✅ | ✅ | — | — | — | — | — |
+| Review Entries | ✅ | ✅ | ✅ | — | — | — | — | — |
+| Reopen a finished station attempt **(server)** | ✅ | ✅ | ✅ | — | — | — | — | — |
+| Correct a submitted entry (not built yet, §2.2) | ✅ | ✅ | ✅ | — | — | — | — | — |
+| Command Center page (not built yet, §2.9/§2.12) | ✅ | ✅ | — | — | ✅ | — | — | — |
+| Gate Check-In, Arrivals Dashboard | ✅ | ✅ | — | — | — | ✅ | — | — |
+| Add someone at the gate who isn't on the roster **(server)** | ✅ | ✅ | — | — | — | — | — | — |
+| Patrol Manager: create / edit / delete patrols **(server)** | ✅ | ✅ | — | — | ✅ | — | ✅ | — |
+| Import Roster **(server)** | ✅ | ✅ | — | — | — | — | — | — |
+| Event Manager, Station Manager, User Manager | ✅ | ✅ | — | — | — | — | — | — |
+| Score Finalizer, Event Reports (finalized results **(server)**) | ✅ | ✅ | ✅ | — | — | — | — | — |
+| Configuration Manager, grant System Admin | ✅ | — | — | — | — | — | — | — |
+
+Not yet enforced on the server (frontend menus only): events, stations,
+configurations, users, reports generation, arrivals. See #236.
 
 ---
 
@@ -103,13 +79,13 @@ flowchart TD
 ```mermaid
 flowchart LR
     NewUser["New OIDC / Firebase Signup"] --> Pending["Status: 'pending' (Holding Area)"]
-    Pending --> Approval{"Admin / Station Lead Review"}
+    Pending --> Approval{"Admin Review"}
     Approval -- Approve --> Active["Status: 'active' (Role Assigned)"]
     Approval -- Block --> Blocked["Status: 'blocked' (Access Denied)"]
 ```
 
 - When a new user logs in for the first time via OIDC / Firebase Auth, they are automatically provisioned with `status = "pending"` in the user holding area.
-- Pending users cannot access event data until an Admin or Station Lead approves them and assigns them an event/station role.
+- Pending users cannot access event data until an Admin approves them and assigns them an event role.
 
 ---
 

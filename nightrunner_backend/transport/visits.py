@@ -1,8 +1,18 @@
-from datetime import datetime, timezone
 import falcon
 from nightrunner_backend.app_context import get_driver
 from nightrunner_backend.drivers.store.station_visits import StationVisitsStore
+from nightrunner_backend.models.user_roles import SCORING_ROLES, STATION_CHECKIN_ROLES
 from nightrunner_backend.transport import visit_actions
+from nightrunner_backend.transport.permissions import require_event_role
+
+
+def _require_station_staff(req: falcon.Request, event_id):
+    """Station check-in and check-out: station staff at any station, plus the scoring team."""
+    require_event_role(
+        req, event_id, STATION_CHECKIN_ROLES,
+        title="Station Role Required",
+        description="Only station leads, station volunteers, the scoring team and admins can check patrols in or out.",
+    )
 
 
 class VisitsResource:
@@ -38,6 +48,8 @@ class VisitCheckInResource:
         if not patrol_id:
             raise falcon.HTTPBadRequest(description="'patrolId' is required.")
 
+        _require_station_staff(req, event_id)
+
         store = StationVisitsStore(get_driver())
         visit, status = await visit_actions.check_in(
             store,
@@ -69,6 +81,8 @@ class VisitCheckOutResource:
             raise falcon.HTTPBadRequest(description="'stationId' is required.")
         if not patrol_id:
             raise falcon.HTTPBadRequest(description="'patrolId' is required.")
+
+        _require_station_staff(req, event_id)
 
         store = StationVisitsStore(get_driver())
         visit, status = await visit_actions.check_out(
@@ -102,44 +116,23 @@ class VisitResetResource:
         if not patrol_id:
             raise falcon.HTTPBadRequest(description="'patrolId' is required.")
 
+        # Reopening belongs to the scoring team at any time. There used to be a
+        # 5-minute self-reset window for station staff, but the role plan
+        # (#236) takes scoring out of the field, so the window no longer
+        # distinguishes anyone. The old after-the-window check also never
+        # passed in production: it tested "<event_id>:<role>" strings with `in`
+        # and read `isAdmin` where the middleware sets `is_admin`.
+        user = require_event_role(
+            req, event_id, SCORING_ROLES,
+            title="Scoring Team Required",
+            description="Only the scoring team, event admins and system admins can reopen a station attempt.",
+        )
+
         store = StationVisitsStore(get_driver())
         latest = await store.get_latest_visit(event_id, station_id, patrol_id)
 
         if not latest:
             raise falcon.HTTPNotFound(description="No visit record found for this patrol and station.")
-
-        # Check authorization and time constraints
-        user = getattr(req.context, "user", None) or {}
-        user_roles = getattr(req.context, "roles", []) or []
-        is_admin = bool(user.get("isAdmin")) or "admin" in user_roles or "event-admin" in user_roles
-        
-        # Check if user has station-leader role for event or globally
-        event_role = None
-        if isinstance(user_roles, dict):
-            event_role = user_roles.get(event_id)
-        is_station_leader = is_admin or event_role in ("station-leader", "admin", "event-admin") or "station-leader" in user_roles
-
-        # Evaluate 5-minute volunteer window from tasks_completed_at / checked_out_at / created_at
-        completed_time_str = latest.tasks_completed_at or latest.checked_out_at or latest.created_at
-        within_5_minutes = False
-        if completed_time_str:
-            try:
-                # Handle ISO format strings
-                if completed_time_str.endswith("Z"):
-                    completed_time_str = completed_time_str[:-1] + "+00:00"
-                dt = datetime.fromisoformat(completed_time_str)
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                now = datetime.now(timezone.utc)
-                within_5_minutes = (now - dt).total_seconds() <= 300
-            except Exception:
-                within_5_minutes = False
-
-        if not within_5_minutes and not is_station_leader:
-            raise falcon.HTTPForbidden(
-                title="Station Leader Required",
-                description="The 5-minute self-reset window has expired. Reopening this station attempt requires a Station Leader or Event Admin."
-            )
 
         # Reopen attempt
         latest.status = "checked_in"

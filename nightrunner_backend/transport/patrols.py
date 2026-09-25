@@ -3,6 +3,30 @@ import uuid6
 from nightrunner_backend.app_context import get_driver
 from nightrunner_backend.drivers.store.patrols import PatrolsStore
 from nightrunner_backend.models.patrol import Patrol, PatrolMember
+from nightrunner_backend.models.user_roles import can_manage_patrols
+
+
+def _require_patrol_manager(req: falcon.Request, event_id):
+    """Rejects the request unless the caller may change this event's patrols.
+
+    Reading patrols stays open to any authenticated user; the scoring team and
+    station staff need the roster to do their jobs. Creating, editing and
+    deleting are the event's own business, so they stay with system admins,
+    event admins, patrol management and the command center.
+    """
+    user = getattr(req.context, "user", None) or {}
+    roles = getattr(req.context, "roles", None) or []
+
+    if can_manage_patrols(roles, bool(user.get("is_admin")), event_id):
+        return
+
+    raise falcon.HTTPForbidden(
+        title="Patrol Management Required",
+        description=(
+            "Only system admins, event admins, patrol management and the "
+            "command center can create, edit or delete patrols."
+        ),
+    )
 
 
 class PatrolsResource:
@@ -24,6 +48,7 @@ class PatrolsResource:
         event_id = data.get("eventId")
         if not event_id:
             raise falcon.HTTPBadRequest(description="'eventId' is required when creating a patrol.")
+        _require_patrol_manager(req, event_id)
         members_data = data.get("members", [])
         if not isinstance(members_data, list):
             raise falcon.HTTPBadRequest(description="'members' must be a list.")
@@ -93,9 +118,13 @@ class PatrolResource:
         patrol = await store.get(patrol_id)
         if not patrol:
             raise falcon.HTTPNotFound()
+        _require_patrol_manager(req, patrol.event_id)
         data = await req.get_media()
         patrol.name = data.get("name", patrol.name)
         if "eventId" in data:
+            # Moving a patrol between events needs rights on the destination
+            # too, or rights on one event would let it be pushed into another.
+            _require_patrol_manager(req, data.get("eventId"))
             patrol.event_id = data.get("eventId")
         if "phoneNumber" in data:
             patrol.phone_number = data.get("phoneNumber")
@@ -128,5 +157,6 @@ class PatrolResource:
         patrol = await store.get(patrol_id)
         if not patrol:
             raise falcon.HTTPNotFound()
+        _require_patrol_manager(req, patrol.event_id)
         await store.delete(patrol_id)
         resp.status = falcon.HTTP_204

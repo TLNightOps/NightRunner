@@ -35,11 +35,8 @@ export default function ScoreForm({
         const userService = new UserService();
         const cachedUser = userService.getCached();
         if (cachedUser) {
-            // Check if admin or has scorer/scoring-center role for this event (support single role or multiple roles)
-            const eventRole = cachedUser.roles?.[eventId];
-            const rolesList = Array.isArray(eventRole) ? eventRole : [eventRole, ...(cachedUser.roles ? Object.values(cachedUser.roles) : [])];
-            const allowed = cachedUser.isAdmin || rolesList.some(r => r === "scorer" || r === "admin" || r === "scoring-center" || r === "event-admin");
-            setIsManualAllowed(allowed);
+            // Paper entry is for the scoring team, who enter scores at the scoring center.
+            setIsManualAllowed(userService.isScoringTeam(eventId));
         } else {
             // Default to allowed so fallback works if user cache is empty
             setIsManualAllowed(true);

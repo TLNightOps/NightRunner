@@ -230,7 +230,8 @@ describe('Public page modules load', () => {
         // The static /checkin and the parameterised /checkin/:token coexist.
         const authenticated = AppRoutes.find(r => r.path === '/checkin');
 
-        expect(authenticated.access).toBe(ACCESS.USER);
+        // Station staff only since the #236 role plan; the public link stays open.
+        expect(authenticated.access).toBe(ACCESS.STATION);
     });
 
 });

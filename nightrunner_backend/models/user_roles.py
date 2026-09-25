@@ -32,3 +32,81 @@ def roles_to_map(roles):
             roles_map[role] = role
 
     return roles_map
+
+
+# Event roles, as the User Manager assigns them. The role plan (#236) is the
+# matrix in docs/USER_ROLES_AND_PERMISSIONS.md; the frontend mirrors these in
+# src/lib/roles.js, so change both together.
+EVENT_ADMIN = "event-admin"
+SCORING_TEAM = "scoring-team"
+STATION_LEAD = "station-lead"
+STATION_VOLUNTEER = "station-volunteer"
+COMMAND_CENTER = "command-center"
+GATE_CHECKIN = "gate-checkin"
+PATROL_MANAGEMENT = "patrol-management"
+
+# Enter, correct and reopen scores, and finalize results. Scores are entered at
+# the scoring center by the scoring team, not in the field.
+SCORING_ROLES = (EVENT_ADMIN, SCORING_TEAM)
+
+# Check a patrol in or out at any station.
+STATION_CHECKIN_ROLES = (EVENT_ADMIN, SCORING_TEAM, STATION_LEAD, STATION_VOLUNTEER)
+
+# Create, edit or delete patrols. Scoring and station roles read patrol data
+# but do not own it.
+PATROL_WRITE_ROLES = (EVENT_ADMIN, PATROL_MANAGEMENT, COMMAND_CENTER)
+
+# Roles that carry system-wide authority regardless of event.
+GLOBAL_ADMIN_ROLES = ("admin", "system-admin")
+
+
+def has_event_role(roles, is_admin=False, event_id=None, allowed=()):
+    """Whether a user holds one of ``allowed`` for an event.
+
+    System admins, and holders of a global admin role, pass for every event.
+
+    :param roles: iterable of stored role strings, as `req.context.roles` holds.
+        These are ``"<event_id>:<role>"`` strings, so never test them with
+        ``in`` directly -- that is the bug this helper replaces.
+    :param is_admin: the user's system administrator flag.
+    :param event_id: the event being acted on.
+    :param allowed: role names that grant the action.
+    :returns: True if the user may act on the event.
+    """
+    if is_admin:
+        return True
+
+    roles_map = roles_to_map(roles)
+
+    if any(role in roles_map for role in GLOBAL_ADMIN_ROLES):
+        return True
+
+    if not event_id:
+        return False
+
+    return roles_map.get(event_id) in allowed
+
+
+def can_manage_patrols(roles, is_admin=False, event_id=None):
+    """Whether a user may create, edit or delete patrols in an event.
+
+    Reads are open to any authenticated user; only mutation is restricted.
+    """
+    return has_event_role(roles, is_admin, event_id, PATROL_WRITE_ROLES)
+
+
+def has_role_on_any_event(roles, is_admin=False, allowed=()):
+    """Whether a user holds one of ``allowed`` on at least one event.
+
+    For records that are not tied to one event, such as troops, which are
+    shared across events.
+    """
+    if is_admin:
+        return True
+
+    roles_map = roles_to_map(roles)
+
+    if any(role in roles_map for role in GLOBAL_ADMIN_ROLES):
+        return True
+
+    return any(role in allowed for role in roles_map.values())

@@ -2,6 +2,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 import falcon
+
+from nightrunner_backend.models.user_roles import EVENT_ADMIN
+from nightrunner_backend.transport.permissions import require_event_role, require_role_on_any_event
 import uuid6
 
 from nightrunner_backend.app_context import get_driver
@@ -27,24 +30,19 @@ def _require_object(payload: Any) -> Dict[str, Any]:
     return payload
 
 
+async def _troop_number_map(store: RosterStore) -> Dict[str, str]:
+    troops = await store.list_troops()
+    return {troop.id: troop.number for troop in troops}
+
+
 def _require_admin(req: falcon.Request, event_id: str = None) -> dict:
-    user = getattr(req.context, "user", None) or {}
-    roles = getattr(req.context, "roles", []) or []
-
-    is_admin = bool(user.get("is_admin")) or bool(user.get("isAdmin"))
-    if not is_admin:
-        if isinstance(roles, dict) and event_id:
-            role = roles.get(event_id)
-            is_admin = role in ("admin", "event-admin")
-        else:
-            is_admin = "admin" in roles or "system-admin" in roles or "event-admin" in roles
-
-    if not is_admin:
-        raise falcon.HTTPForbidden(
-            title="Admin required",
-            description="Only Event-Admin or System Admin roles can add troops or attendees.",
-        )
-    return user
+    """Event admins only. Troops are shared across events, so without an
+    event an event admin of any event may add one."""
+    title = "Admin required"
+    description = "Only Event-Admin or System Admin roles can add troops or attendees."
+    if event_id:
+        return require_event_role(req, event_id, (EVENT_ADMIN,), title, description)
+    return require_role_on_any_event(req, (EVENT_ADMIN,), title, description)
 
 
 class TroopsResource:
@@ -205,6 +203,7 @@ class EventAttendeeResource:
     """DELETE /v1/events/{event_id}/attendees/{attendee_id}"""
 
     async def on_delete(self, req: falcon.Request, resp: falcon.Response, event_id: str, attendee_id: str):
+        _require_admin(req, event_id)
         store = RosterStore(get_driver())
         attendee = await store.get_attendee(attendee_id)
         if not attendee or attendee.event_id != event_id:
@@ -239,10 +238,12 @@ class RosterImportPreviewResource:
     """
     POST /v1/events/{event_id}/roster/preview
 
-    Takes parsed sheet rows and returns a plan. Writes nothing.
+    Takes parsed sheet rows and returns a plan. Writes nothing, but the plan
+    carries the existing roster (youth names), so it is admin-only too.
     """
 
     async def on_post(self, req: falcon.Request, resp: falcon.Response, event_id: str):
+        _require_admin(req, event_id)
         payload = _require_object(await req.get_media())
         rows = payload.get("rows")
         if not isinstance(rows, list):
@@ -268,6 +269,7 @@ class RosterImportApplyResource:
     """
 
     async def on_post(self, req: falcon.Request, resp: falcon.Response, event_id: str):
+        _require_admin(req, event_id)
         payload = _require_object(await req.get_media())
         rows = payload.get("rows")
         if not isinstance(rows, list):

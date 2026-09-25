@@ -31,18 +31,16 @@ function canAccess(route, eventId = null) {
         return ApiService.userData.isSystemAdmin();
     }
 
-    if (route.path === "/admin/finalizer") {
-        if (ApiService.userData.isSystemAdmin() || ApiService.userData.isAdmin(eventId)) {
-            return true;
-        }
-
-        const eventRole = ApiService.userData.getEventRole(eventId);
-        const rolesList = Array.isArray(eventRole) ? eventRole : [eventRole, ...(cachedUser.roles ? Object.values(cachedUser.roles) : [])];
-        return rolesList.some(r => r === "station_leader" || r === "station_member" || r === "scorer" || r === "scoring-center" || r === "event-admin" || r === "admin");
+    if (route.access === ACCESS.SCORING) {
+        return ApiService.userData.isScoringTeam(eventId);
     }
 
-    if (route.access === ACCESS.EVENT_OPS) {
-        return ApiService.userData.isEventOps(eventId);
+    if (route.access === ACCESS.STATION) {
+        return ApiService.userData.isStationStaff(eventId);
+    }
+
+    if (route.access === ACCESS.GATE_CHECKIN) {
+        return ApiService.userData.isGateCheckIn(eventId);
     }
 
     if (route.access === ACCESS.PATROL_MANAGER) {
@@ -70,7 +68,8 @@ function Sidebar({ open, close }) {
 
     const { eventId } = useEventContext();
 
-    const [user, setUser] = useState(() => ApiService.userData.getCached());
+    // Held only to re-render when /me changes: canAccess reads the cache.
+    const [, setUser] = useState(() => ApiService.userData.getCached());
 
     const loggedIn = AuthService.isAuthenticated();
 
@@ -86,10 +85,6 @@ function Sidebar({ open, close }) {
         return () => unsubscribe();
     }, [loggedIn, auth.isAuthenticated]);
 
-    const isAdmin =
-        user &&
-        ApiService.userData.isAdmin(eventId);
-
     const links =
         AppRoutes.filter(
             route =>
@@ -104,7 +99,12 @@ function Sidebar({ open, close }) {
     const dashboardLink =
         links.find(route => route.path === "/dashboard");
 
-    // Group definitions
+    const helpLink =
+        links.find(route => route.path === "/help");
+
+    // Group definitions. A group shows whenever the user can open at least one
+    // of its routes, so Patrol Management sees Administration > Patrol Manager
+    // and the Scoring Team sees Reports & Finalization.
     const groupsConfig = [
         {
             key: "operations",
@@ -127,14 +127,12 @@ function Sidebar({ open, close }) {
                 "/admin/roster",
                 "/admin/users",
                 "/admin/configurations"
-            ],
-            adminOnly: true
+            ]
         },
         {
             key: "reports",
             title: "Reports & Finalization",
-            paths: ["/admin/reports", "/admin/finalizer"],
-            adminOnly: true
+            paths: ["/admin/reports", "/admin/finalizer"]
         }
     ];
 
@@ -269,10 +267,6 @@ function Sidebar({ open, close }) {
                     )}
 
                     {groupsConfig.map(group => {
-                        if (group.adminOnly && !isAdmin) {
-                            return null;
-                        }
-
                         const groupRoutes = group.paths
                             .map(path => links.find(l => l.path === path))
                             .filter(Boolean);
@@ -315,6 +309,12 @@ function Sidebar({ open, close }) {
                             </section>
                         );
                     })}
+
+                    {helpLink && (
+                        <section className="sidebar-section sidebar-section-dashboard">
+                            {renderLink(helpLink)}
+                        </section>
+                    )}
 
                 </nav>
 
