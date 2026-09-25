@@ -1,11 +1,9 @@
 // Content for the Help & Docs page. Edit this file to update the page; the
 // component only lays it out.
 //
-// Describe what the app does TODAY, not what is planned. The role → screen
-// matrix is being reworked (#236); when that lands, update ROLES and
-// ROLE_GRID to match. Grid access is taken from `access` in AppRoutes.jsx
-// plus the Sidebar's `adminOnly` groups — note the route guard in App.jsx
-// only checks sign-in, so the grid describes what each role sees in the menu.
+// Describe what the app does today, not what is planned. The role groups the
+// grid describes live in lib/roles.js (frontend) and models/user_roles.py
+// (backend); when those change, update ROLES and ROLE_GRID to match.
 
 export const HELP_UPDATED = "September 2026";
 
@@ -17,29 +15,55 @@ export const ROLES = [
         summary: "System Admins have full access to all functions of the program, across every event.",
         details: [
             "Sees every event, including new events that have no Event Admin yet.",
-            "The only role that can open the Configuration Manager.",
-            "Approves new accounts, blocks users, and grants System Admin to others.",
-            "Can reopen a finished station attempt at any time."
+            "The only role that can open the Configuration Manager or make someone a System Admin.",
+            "Approves new accounts and blocks users."
         ]
     },
     {
         key: "event-admin",
         name: "Event Admin",
-        summary: "Event Admins run a single event: its stations, patrols, users, scoring, and reports.",
+        summary: "Event Admins run a single event: its stations, patrols, roster, users, gate, scoring and reports.",
         details: [
             "Has the Event Admin role only for the events they are assigned to.",
-            "Can use every Administration and Reports screen for that event.",
-            "Assigns roles to other users for that event.",
-            "Cannot change system-wide configurations."
+            "Can do everything the other event roles can, for that event.",
+            "Gives other people their roles for that event.",
+            "The only event role that can add someone at the gate who isn't on the roster."
         ]
     },
     {
-        key: "event-ops",
-        name: "Event Operations",
-        summary: "Event Operations staff work the gate, checking people in as they arrive.",
+        key: "scoring-team",
+        name: "Scoring Team",
+        summary: "The Scoring Team enters scores at the scoring center. Nobody enters scores in the field.",
         details: [
-            "Gets the Gate Check-In and Arrivals Dashboard screens.",
-            "Also has everything a Standard User has."
+            "Enters, reviews, reopens and corrects scores for every station.",
+            "Uses the Score Finalizer and Event Reports.",
+            "Can also check patrols in and out at any station."
+        ]
+    },
+    {
+        key: "station",
+        name: "Station Lead and Station Volunteer",
+        summary: "Station staff check patrols in and out at any station.",
+        details: [
+            "No access to scoring. Scores go to the Scoring Team.",
+            "The two roles have the same access for now. Station Leads will get extra permissions later."
+        ]
+    },
+    {
+        key: "command-center",
+        name: "Command Center",
+        summary: "Command Center volunteers track patrols on the night and can create and edit patrols.",
+        details: [
+            "Uses the Patrol Manager.",
+            "The Command Center page itself (send-out, return, skipped stations) is still being built."
+        ]
+    },
+    {
+        key: "gate-checkin",
+        name: "Gate Check-In",
+        summary: "Gate Check-In volunteers check people in as they arrive. This role used to be called Event Operations.",
+        details: [
+            "Uses Gate Check-In and the Arrivals Dashboard."
         ]
     },
     {
@@ -47,28 +71,16 @@ export const ROLES = [
         name: "Patrol Management",
         summary: "Patrol Management users register patrols and keep their details up to date.",
         details: [
-            "Can create and edit patrols on the Patrol Manager screen.",
-            "Patrol Manager does not show in their menu yet. Share the direct link: /admin/patrols.",
-            "Also has everything a Standard User has."
-        ]
-    },
-    {
-        key: "scoring-station",
-        name: "Scoring and station roles",
-        summary: "Scoring Lead, Scoring Center, Scorer, Station Lead, and Station Volunteer currently have the same access as a Standard User.",
-        details: [
-            "These roles can be assigned in the User Manager today.",
-            "Separate permissions for each one are planned but not built yet."
+            "Creates and edits patrols in the Patrol Manager."
         ]
     },
     {
         key: "user",
         name: "Standard User",
-        summary: "Standard Users check patrols in and out of stations and enter scores.",
+        summary: "Signed in, with no role for the selected event.",
         details: [
-            "Can view events, patrols, and stations.",
-            "Can score, review score entries, and watch Live Status.",
-            "Can reopen a station attempt within 5 minutes of finishing it. After that, a System Admin has to reopen it."
+            "Can see events, stations and patrols, including patrol phone and radio details.",
+            "Can watch Live Status."
         ]
     },
     {
@@ -86,15 +98,18 @@ export const ROLES = [
 export const GRID_ROLES = [
     { key: "system-admin", label: "System Admin" },
     { key: "event-admin", label: "Event Admin" },
-    { key: "event-ops", label: "Event Ops" },
+    { key: "scoring-team", label: "Scoring Team" },
+    { key: "station", label: "Station Lead / Volunteer" },
+    { key: "command-center", label: "Command Center" },
+    { key: "gate-checkin", label: "Gate Check-In" },
     { key: "patrol-management", label: "Patrol Mgmt" },
-    { key: "scoring-station", label: "Scoring & Station" },
     { key: "user", label: "Standard User" }
 ];
 
 
 const ALL = GRID_ROLES.map(role => role.key);
 const ADMINS = ["system-admin", "event-admin"];
+const SCORING = [...ADMINS, "scoring-team"];
 
 
 // `roles` lists who has the screen. `partial` marks roles that can reach it
@@ -104,16 +119,30 @@ export const ROLE_GRID = [
         section: "Everyday",
         rows: [
             { screen: "Dashboard, Events, Patrols, Stations", roles: ALL },
-            { screen: "Scoring and Review Entries", roles: ALL },
-            { screen: "Station Check In / Check Out", roles: ALL },
+            { screen: "Patrol phone and radio details", roles: ALL },
             { screen: "Live Status", roles: ALL }
         ]
     },
     {
-        section: "Event Operations",
+        section: "Stations",
         rows: [
-            { screen: "Gate Check-In", roles: [...ADMINS, "event-ops"] },
-            { screen: "Arrivals Dashboard", roles: [...ADMINS, "event-ops"] }
+            { screen: "Station Check In / Check Out", roles: [...SCORING, "station"] }
+        ]
+    },
+    {
+        section: "Scoring",
+        rows: [
+            { screen: "Scoring (enter scores)", roles: SCORING },
+            { screen: "Review Entries", roles: SCORING },
+            { screen: "Reopen a finished station attempt", roles: SCORING }
+        ]
+    },
+    {
+        section: "Gate",
+        rows: [
+            { screen: "Gate Check-In", roles: [...ADMINS, "gate-checkin"] },
+            { screen: "Arrivals Dashboard", roles: [...ADMINS, "gate-checkin"] },
+            { screen: "Add someone at the gate who isn't on the roster", roles: ADMINS }
         ]
     },
     {
@@ -122,12 +151,7 @@ export const ROLE_GRID = [
             { screen: "Admin Dashboard", roles: ADMINS },
             { screen: "Event Manager", roles: ADMINS },
             { screen: "Station Manager", roles: ADMINS },
-            {
-                screen: "Patrol Manager",
-                roles: ADMINS,
-                partial: ["patrol-management"],
-                note: "Not in the Patrol Management menu yet. Use the direct link /admin/patrols."
-            },
+            { screen: "Patrol Manager (create and edit patrols)", roles: [...ADMINS, "command-center", "patrol-management"] },
             { screen: "Import Roster", roles: ADMINS },
             { screen: "User Manager", roles: ADMINS },
             { screen: "Configuration Manager", roles: ["system-admin"] }
@@ -136,21 +160,8 @@ export const ROLE_GRID = [
     {
         section: "Reports & Finalization",
         rows: [
-            { screen: "Event Reports", roles: ADMINS },
-            { screen: "Score Finalizer", roles: ADMINS }
-        ]
-    },
-    {
-        section: "Station fixes",
-        rows: [
-            {
-                screen: "Reopen a station attempt (within 5 minutes)",
-                roles: ALL
-            },
-            {
-                screen: "Reopen a station attempt (after 5 minutes)",
-                roles: ["system-admin"]
-            }
+            { screen: "Event Reports", roles: SCORING },
+            { screen: "Score Finalizer", roles: SCORING }
         ]
     }
 ];

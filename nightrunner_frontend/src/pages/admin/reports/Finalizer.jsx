@@ -34,15 +34,9 @@ export default function Finalizer() {
 
         const user = ApiService.userData.getCached();
         if (user) {
-            const isSysAdmin = ApiService.userData.isSystemAdmin();
-            const isEvtAdmin = ApiService.userData.isEventAdmin(eventId);
-            const eventRole = ApiService.userData.getEventRole(eventId);
-            const rolesList = Array.isArray(eventRole) ? eventRole : [eventRole, ...(user.roles ? Object.values(user.roles) : [])];
-            const isStationLead = rolesList.some(r => r === "station_leader" || r === "station_member" || r === "scorer" || r === "scoring-center" || r === "event-admin" || r === "admin");
-            
-            if (!isSysAdmin && !isEvtAdmin && !isStationLead) {
+            if (!ApiService.userData.isScoringTeam(eventId)) {
                 setIsAuthorized(false);
-                setError("Access Denied: The Event Score Finalizer is restricted to System Administrators, Event Administrators, and Scoring Station Lead roles.");
+                setError("Access Denied: The Event Score Finalizer is restricted to the Scoring Team, Event Admins and System Admins.");
                 setLoading(false);
                 return;
             }

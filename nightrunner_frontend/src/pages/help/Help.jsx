@@ -48,10 +48,14 @@ function AccessCell({ access }) {
 
 export default function Help() {
 
+    const rows =
+        ROLE_GRID.flatMap(group => group.rows);
+
+    const hasPartial =
+        rows.some(row => row.partial?.length);
+
     const notes =
-        ROLE_GRID
-            .flatMap(group => group.rows)
-            .filter(row => row.note);
+        rows.filter(row => row.note);
 
     return (
         <div className="help-container">
@@ -103,7 +107,9 @@ export default function Help() {
 
                 <div className="help-legend" aria-hidden="true">
                     <span><span className="help-cell-yes">✓</span> Yes</span>
-                    <span><span className="help-cell-partial">◐</span> Direct link only</span>
+                    {hasPartial && (
+                        <span><span className="help-cell-partial">◐</span> Direct link only</span>
+                    )}
                     <span><span className="help-cell-no">–</span> No</span>
                 </div>
 

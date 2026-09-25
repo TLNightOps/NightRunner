@@ -37,10 +37,15 @@ import ArrivalsPrint from "./pages/arrivals/ArrivalsPrint.jsx";
 import ArrivalsDashboard from "./pages/arrivals/ArrivalsDashboard.jsx";
 
 
+// Who can open each route. The role groups behind these live in lib/roles.js
+// (see canAccess in components/Sidebar.jsx); the backend enforces the same
+// groups on its write endpoints.
 export const ACCESS = {
     PUBLIC: "public",
     USER: "user",
-    EVENT_OPS: "event-ops",
+    STATION: "station",
+    SCORING: "scoring",
+    GATE_CHECKIN: "gate-checkin",
     PATROL_MANAGER: "patrol-manager",
     ADMIN: "admin",
     SYSTEM_ADMIN: "system-admin"
@@ -114,24 +119,21 @@ export const AppRoutes = [
         path: "/scoring",
         element: Scoring,
         name: "Scoring",
-        access: ACCESS.USER,
+        access: ACCESS.SCORING,
         // Otherwise the sidebar marks Scoring active on /scoring/review too.
         exact: true
     },
     {
-        // Open to every signed-in user for now, same as Scoring, so a volunteer
-        // can check their own entries. Narrow to station lead / scoring center /
-        // admin with the role matrix (#236).
         path: "/scoring/review",
         element: StationReview,
         name: "Review Entries",
-        access: ACCESS.USER
+        access: ACCESS.SCORING
     },
     {
         path: "/checkin",
         element: CheckInOut,
         name: "Check In / Check Out",
-        access: ACCESS.USER
+        access: ACCESS.STATION
     },
     {
         path: "/me",
@@ -209,19 +211,19 @@ export const AppRoutes = [
         path: "/arrivals",
         element: Arrivals,
         name: "Gate Check-In",
-        access: ACCESS.EVENT_OPS
+        access: ACCESS.GATE_CHECKIN
     },
     {
         path: "/arrivals/print",
         element: ArrivalsPrint,
-        access: ACCESS.EVENT_OPS,
+        access: ACCESS.GATE_CHECKIN,
         layout: false
     },
     {
         path: "/arrivals/dashboard",
         element: ArrivalsDashboard,
         name: "Arrivals Dashboard",
-        access: ACCESS.EVENT_OPS
+        access: ACCESS.GATE_CHECKIN
     },
     {
         path: "/admin/patrols/create",
@@ -267,23 +269,23 @@ export const AppRoutes = [
         path: "/admin/reports",
         element: Reports,
         name: "Event Reports",
-        access: ACCESS.ADMIN
+        access: ACCESS.SCORING
     },
     {
         path: "/admin/reports/view",
         element: ViewFinalReport,
-        access: ACCESS.ADMIN
+        access: ACCESS.SCORING
     },
     {
         path: "/admin/finalizer",
         element: Finalizer,
         name: "Score Finalizer",
-        access: ACCESS.ADMIN
+        access: ACCESS.SCORING
     },
     {
         path: "/reports/print",
         element: PrintReport,
-        access: ACCESS.USER,
+        access: ACCESS.SCORING,
         layout: false
     },
     {

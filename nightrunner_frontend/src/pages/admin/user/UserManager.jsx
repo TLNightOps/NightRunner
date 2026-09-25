@@ -5,17 +5,12 @@ import { useEventContext } from "@/api/helpers/event/EventContext.jsx";
 
 import "./UserManager.css";
 
-const EVENT_ROLES = [
-    "user",
-    "event-admin",
-    "event-ops",
-    "patrol-management",
-    "scoring-lead",
-    "scoring-center",
-    "scorer",
-    "station-lead",
-    "volunteer"
-];
+import {
+    EVENT_ROLES,
+    ROLE_AUDIENCE,
+    ROLE_DESCRIPTIONS,
+    formatRole
+} from "@/lib/roles.js";
 
 export default function UserManager() {
     const {
@@ -709,62 +704,11 @@ export default function UserManager() {
                                             </strong>
                                             {(() => {
                                                 const currentRole = getEventRole(selectedUser) ?? "user";
-                                                switch (currentRole) {
-                                                    case "event-admin":
-                                                        return (
-                                                            <span>
-                                                                <strong>Event Admin:</strong> Full event management authority. Can configure event details, manage patrols & stations, assign user roles (Scoring Lead, Station Lead, Volunteer), override station locks, access the Score Finalizer, and generate all scoring reports.
-                                                            </span>
-                                                        );
-                                                    case "event-ops":
-                                                        return (
-                                                            <span>
-                                                                <strong>Event Operations:</strong> Logistics & gate staff. Can access the Arrivals Dashboard and Gate Check-in page to record participant arrivals.
-                                                            </span>
-                                                        );
-                                                    case "patrol-management":
-                                                        return (
-                                                            <span>
-                                                                <strong>Patrol Management:</strong> Patrol manager & registrar. Can view the Patrol Manager page, scan patrol QR codes, and create or update patrol registrations.
-                                                            </span>
-                                                        );
-                                                    case "scoring-lead":
-                                                        return (
-                                                            <span>
-                                                                <strong>Scoring Lead:</strong> Lead scoring manager. Can review cross-station scores, perform manual score entries for any station, access the Event Score Finalizer page, adjust calculation totals, and generate all scoring reports.
-                                                            </span>
-                                                        );
-                                                    case "scoring-center":
-                                                        return (
-                                                            <span>
-                                                                <strong>Scoring Center / Team:</strong> Scoring team member. Can review scores across all stations, enter manual paper scores for any station, and assist with score calculation verification.
-                                                            </span>
-                                                        );
-                                                    case "scorer":
-                                                        return (
-                                                            <span>
-                                                                <strong>Scorer:</strong> Scoring volunteer. Can perform station check-in/out and record raw task completion scores and timing for assigned stations. Point values and weights remain hidden.
-                                                            </span>
-                                                        );
-                                                    case "station-lead":
-                                                        return (
-                                                            <span>
-                                                                <strong>Station Lead:</strong> Station supervisor. Can assign and manage volunteer staff for their station, perform check-in/out and scoring, and override/reopen completed station attempt locks at their station beyond the 5-minute window.
-                                                            </span>
-                                                        );
-                                                    case "volunteer":
-                                                        return (
-                                                            <span>
-                                                                <strong>Station Volunteer:</strong> Station helper. Can perform patrol check-in/check-out and record task completions and timing at assigned stations. Can self-reopen attempt within 5 minutes of completion. Point weights remain hidden.
-                                                            </span>
-                                                        );
-                                                    default:
-                                                        return (
-                                                            <span>
-                                                                <strong>Standard User:</strong> Basic registered account. Has standard event participant view access once approved from the holding area.
-                                                            </span>
-                                                        );
-                                                }
+                                                return (
+                                                    <span>
+                                                        <strong>{formatRole(currentRole)}:</strong> {ROLE_DESCRIPTIONS[currentRole] ?? ROLE_DESCRIPTIONS.user}
+                                                    </span>
+                                                );
                                             })()}
                                         </div>
                                     </div>
@@ -974,93 +918,22 @@ export default function UserManager() {
 
                         <div className="drawer-content">
                             <div className="role-guide-card">
-                                <h4>👑 System Administrator</h4>
-                                <p><strong>Key Permissions:</strong> Global root access across all events, system settings, global user management, and organization settings.</p>
-                                <p className="role-guide-audience"><strong>Who to assign:</strong> Lead technical administrators and organization system managers.</p>
+                                <h4>System Administrator</h4>
+                                <p><strong>Key Permissions:</strong> Full access to all functions of the program, across every event, including system configurations and granting System Admin.</p>
+                                <p className="role-guide-audience"><strong>Who to assign:</strong> Lead technical administrators.</p>
                             </div>
 
-                            <div className="role-guide-card">
-                                <h4>⭐ Event Administrator</h4>
-                                <p><strong>Key Permissions:</strong> Full event management authority. Configures event details, manages patrols & stations, assigns user roles (Scoring Lead, Station Lead, Volunteer), overrides station attempt locks, accesses Score Finalizer, and generates all scoring reports.</p>
-                                <p className="role-guide-audience"><strong>Who to assign:</strong> Event directors and head organizers.</p>
-                            </div>
-
-                            <div className="role-guide-card">
-                                <h4>📋 Event Operations</h4>
-                                <p><strong>Key Permissions:</strong> Access to the Arrivals Dashboard and Gate Check-In functionality. Enables staff to view and record participant arrivals.</p>
-                                <p className="role-guide-audience"><strong>Who to assign:</strong> Gate check-in staff, registration desk volunteers, and logistics coordinators.</p>
-                            </div>
-
-                            <div className="role-guide-card">
-                                <h4>🛡️ Patrol Management</h4>
-                                <p><strong>Key Permissions:</strong> Access to the Patrol Manager page, QR code scanning, and creating/editing patrol registrations.</p>
-                                <p className="role-guide-audience"><strong>Who to assign:</strong> Patrol registrars, unit liaisons, and check-in coordinators.</p>
-                            </div>
-
-                            <div className="role-guide-card">
-                                <h4>📊 Scoring Lead</h4>
-                                <p><strong>Key Permissions:</strong> Oversees event scoring, verifies station submissions, performs cross-station paper score entries, accesses the Score Finalizer, adjusts calculation totals, and generates all scoring reports.</p>
-                                <p className="role-guide-audience"><strong>Who to assign:</strong> Chief scoring official or lead scoremaster.</p>
-                            </div>
-
-                            <div className="role-guide-card">
-                                <h4>📝 Scoring Center / Team</h4>
-                                <p><strong>Key Permissions:</strong> Central paper score entry, batch scoring verification across all stations, and score discrepancy audits.</p>
-                                <p className="role-guide-audience"><strong>Who to assign:</strong> Volunteers working in headquarters/scoring center entering paper score sheets.</p>
-                            </div>
-
-                            <div className="role-guide-card">
-                                <h4>🎯 Station Lead</h4>
-                                <p><strong>Key Permissions:</strong> Station supervisor. Manages volunteer staff for their station, performs check-in/out and scoring, and overrides/reopens completed station attempt locks at their station beyond 5 minutes.</p>
-                                <p className="role-guide-audience"><strong>Who to assign:</strong> Station captains and adult station leaders.</p>
-                            </div>
-
-                            <div className="role-guide-card">
-                                <h4>⏱️ Scorer (Station Scorer / Judge)</h4>
-                                <p><strong>Key Permissions:</strong> Performs patrol check-in/out and records raw task completion scores and timing for assigned stations. Point values and weights remain hidden to maintain scoring privacy.</p>
-                                <p className="role-guide-audience"><strong>Who to assign:</strong> Station judges and station scorers.</p>
-                            </div>
-
-                            <div className="role-guide-card">
-                                <h4>🤝 Station Volunteer</h4>
-                                <p><strong>Key Permissions:</strong> Performs patrol check-in/out and records task completions at assigned stations. Can self-reopen attempt within 5 minutes of completion. Point weights remain hidden.</p>
-                                <p className="role-guide-audience"><strong>Who to assign:</strong> General station volunteers and helpers.</p>
-                            </div>
-
-                            <div className="role-guide-card">
-                                <h4>👤 Standard User</h4>
-                                <p><strong>Key Permissions:</strong> Basic registered account without specific event administrative privileges.</p>
-                                <p className="role-guide-audience"><strong>Who to assign:</strong> General event participants and spectators.</p>
-                            </div>
+                            {EVENT_ROLES.map(role => (
+                                <div key={role} className="role-guide-card">
+                                    <h4>{formatRole(role)}</h4>
+                                    <p><strong>Key Permissions:</strong> {ROLE_DESCRIPTIONS[role]}</p>
+                                    <p className="role-guide-audience"><strong>Who to assign:</strong> {ROLE_AUDIENCE[role]}</p>
+                                </div>
+                            ))}
                         </div>
                     </aside>
                 )}
             </div>
         </div>
     );
-}
-
-function formatRole(role) {
-    switch (role) {
-        case "event-admin":
-            return "Event Admin";
-        case "event-ops":
-            return "Event Operations";
-        case "patrol-management":
-            return "Patrol Management";
-        case "scoring-lead":
-            return "Scoring Lead";
-        case "scoring-center":
-            return "Scoring Center / Team";
-        case "scorer":
-            return "Scorer";
-        case "station-lead":
-            return "Station Lead";
-        case "volunteer":
-            return "Station Volunteer";
-        case "user":
-            return "Standard User";
-        default:
-            return role ?? "No Role";
-    }
 }

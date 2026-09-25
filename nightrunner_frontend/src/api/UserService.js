@@ -1,4 +1,11 @@
 import BackendTransport from "./BackendTransport";
+import {
+    GATE_ROLES,
+    PATROL_WRITE_ROLES,
+    SCORING_ROLES,
+    STATION_CHECKIN_ROLES,
+    hasEventRole
+} from "../lib/roles.js";
 
 const USER_KEY = "night-runner-user";
 
@@ -421,31 +428,43 @@ export default class UserService {
     }
 
     /**
-     * Determines whether the current user has Event Operations role.
+     * Gate Check-In and the Arrivals Dashboard.
      *
      * @param {string} eventId
      * @returns {boolean}
      */
-    isEventOps(eventId) {
-        return (
-            this.isSystemAdmin() ||
-            this.isEventAdmin(eventId) ||
-            this.getEventRole(eventId) === "event-ops"
-        );
+    isGateCheckIn(eventId) {
+        return hasEventRole(this.getCached(), eventId, GATE_ROLES);
     }
 
     /**
-     * Determines whether the current user has Patrol Management role.
+     * Create, edit or delete patrols.
      *
      * @param {string} eventId
      * @returns {boolean}
      */
     isPatrolManager(eventId) {
-        return (
-            this.isSystemAdmin() ||
-            this.isEventAdmin(eventId) ||
-            this.getEventRole(eventId) === "patrol-management"
-        );
+        return hasEventRole(this.getCached(), eventId, PATROL_WRITE_ROLES);
+    }
+
+    /**
+     * Enter, review, reopen and correct scores; Score Finalizer and reports.
+     *
+     * @param {string} eventId
+     * @returns {boolean}
+     */
+    isScoringTeam(eventId) {
+        return hasEventRole(this.getCached(), eventId, SCORING_ROLES);
+    }
+
+    /**
+     * Check patrols in and out at any station.
+     *
+     * @param {string} eventId
+     * @returns {boolean}
+     */
+    isStationStaff(eventId) {
+        return hasEventRole(this.getCached(), eventId, STATION_CHECKIN_ROLES);
     }
 
 
