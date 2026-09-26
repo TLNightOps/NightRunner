@@ -1,3 +1,5 @@
+import re
+import unicodedata
 import uuid6
 import asyncio
 import logging
@@ -19,6 +21,32 @@ from nightrunner_backend.troop_results import build_troop_results, scoring_mode_
 from nightrunner_backend.reports_troop_results_pdf import generate_troop_results_pdf
 
 logger = logging.getLogger(__name__)
+
+
+def _filename_slug(text: str) -> str:
+    """ASCII-only, dash-separated: "GA 0594 (Fall)" -> "GA-0594-Fall"."""
+    ascii_text = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^A-Za-z0-9]+", "-", ascii_text).strip("-")
+
+
+def report_download_filename(report: dict, event_name: str, ext: str) -> str:
+    """Build a readable download name: <Event>_<Report>[_<Troop>].<ext>
+
+    Report names are stored as "<Title> (<Event>)", with troop results as
+    "Troop Results — <Troop> (<Event>)". The event suffix is dropped (it leads
+    the filename instead) and each em-dash section becomes its own segment.
+    """
+    title = report.get("name") or ""
+    suffix = f" ({event_name})"
+    if event_name and title.endswith(suffix):
+        title = title[: -len(suffix)]
+    elif title.endswith(")") and " (" in title:
+        # Event was renamed after the report was generated; drop the old name.
+        title = title[: title.rfind(" (")]
+
+    parts = [_filename_slug(event_name)] + [_filename_slug(p) for p in title.split("—")]
+    stem = "_".join(p for p in parts if p)[:150].rstrip("-_")
+    return f"{stem or report['id']}.{ext}"
 
 
 async def _background_generate_attendance_pdf(report_id: str, event_id: str, event_name: str):
@@ -535,7 +563,8 @@ class CompiledReportDownloadResource:
 
         resp.content_type = report.get("content_type", "application/pdf")
         ext = "ods" if (file_key.endswith(".ods") or "opendocument.spreadsheet" in resp.content_type) else "pdf"
-        filename = f"{report['id']}.{ext}"
+        event = await EventsStore(driver).get(report["event_id"])
+        filename = report_download_filename(report, event.name if event else "", ext)
         resp.append_header("Content-Disposition", f'inline; filename="{filename}"')
         resp.data = file_bytes
         resp.status = falcon.HTTP_200

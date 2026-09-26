@@ -118,3 +118,45 @@ async def test_compiled_scoring_reports_workflow(test_client, token_factory):
     await test_client.simulate_delete(f"/v1/compiled-reports/{ods_job['id']}", headers=headers)
 
 
+
+
+@pytest.mark.parametrize("name, event_name, ext, expected", [
+    ("Troop Results — GA 0594 (Fall Camporee 2026)", "Fall Camporee 2026", "pdf",
+     "Fall-Camporee-2026_Troop-Results_GA-0594.pdf"),
+    ("Final Scoring Report (Fall Camporee 2026)", "Fall Camporee 2026", "pdf",
+     "Fall-Camporee-2026_Final-Scoring-Report.pdf"),
+    ("Scoring Spreadsheet ODS (Fall Camporee 2026)", "Fall Camporee 2026", "ods",
+     "Fall-Camporee-2026_Scoring-Spreadsheet-ODS.ods"),
+    # Event name containing parentheses is still stripped exactly.
+    ("Patrol QR Badges (Night Ops (Spring))", "Night Ops (Spring)", "pdf",
+     "Night-Ops-Spring_Patrol-QR-Badges.pdf"),
+    # Event renamed after generation: old name dropped, current name leads.
+    ("Event Attendance Report (Old Name)", "New Name", "pdf",
+     "New-Name_Event-Attendance-Report.pdf"),
+    # Accents and quotes are made filename-safe.
+    ('Final Scoring Report (Café "Night" Run)', 'Café "Night" Run', "pdf",
+     "Cafe-Night-Run_Final-Scoring-Report.pdf"),
+    # Nothing usable falls back to the report id.
+    ("", "", "pdf", "rep-abc.pdf"),
+])
+def test_report_download_filename(name, event_name, ext, expected):
+    from nightrunner_backend.transport.compiled_reports import report_download_filename
+    assert report_download_filename({"id": "rep-abc", "name": name}, event_name, ext) == expected
+
+
+@pytest.mark.asyncio
+async def test_download_uses_readable_filename(test_client, token_factory):
+    headers = token_factory()
+    report = {
+        "id": "rep-abc", "event_id": "evt-123", "status": "ready",
+        "name": "Final Scoring Report (Fall Camporee)", "file_key": "k.pdf",
+        "content_type": "application/pdf",
+    }
+    event = type("E", (), {"name": "Fall Camporee"})()
+    mod = "nightrunner_backend.transport.compiled_reports"
+    with patch(f"{mod}.ReportsStore.get_report", AsyncMock(return_value=report)), \
+         patch(f"{mod}.EventsStore.get", AsyncMock(return_value=event)), \
+         patch(f"{mod}.download_report_bytes", return_value=b"%PDF-1.4"):
+        resp = await test_client.simulate_get("/v1/compiled-reports/rep-abc/download", headers=headers)
+    assert resp.status == falcon.HTTP_200
+    assert resp.headers["content-disposition"] == 'inline; filename="Fall-Camporee_Final-Scoring-Report.pdf"'
