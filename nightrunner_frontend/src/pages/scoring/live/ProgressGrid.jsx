@@ -161,9 +161,47 @@ const CELL_STATES = {
 };
 
 
-/** Work out what one patrol/station cell should show. */
+function formatLocalTime(val) {
+    if (!val) return null;
+    const parsed = new Date(val);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
 export function cellState(patrol, station, visit) {
-    return CELL_STATES[visitStatus(patrol, station, visit)];
+    const status = visitStatus(patrol, station, visit);
+    const base = CELL_STATES[status];
+    if (status === "none") return base;
+
+    const inTime = formatLocalTime(visit?.checkedInAt);
+    const outTime = formatLocalTime(visit?.checkedOutAt);
+    const startTime = formatLocalTime(visit?.tasksStartedAt);
+
+    let title = base.title;
+    let timeLabel = null;
+
+    if (status === "here" && inTime) {
+        title = `Checked In (${inTime})`;
+    } else if (status === "in-progress") {
+        const t = startTime || inTime;
+        if (t) {
+            title = `In Progress (${t})`;
+        }
+    } else if (status === "finished") {
+        const times = [inTime, outTime].filter(Boolean);
+        if (times.length) {
+            title = `Checked out, not scored yet (${times.join(" – ")})`;
+        }
+    } else if (status === "scored") {
+        const times = [inTime, outTime].filter(Boolean);
+        if (times.length) {
+            title = `Scored (attempt locked) (${times.join(" – ")})`;
+        }
+    } else if (status === "skipped" && outTime) {
+        title = `Skipped (${outTime})`;
+    }
+
+    return { ...base, title };
 }
 
 
@@ -204,7 +242,8 @@ export function summarise(stations = [], patrols = [], visits = []) {
 
     patrols.forEach((patrol) => {
         stations.forEach((station) => {
-            const status = visitStatus(patrol, station, visitMap[`${patrol.id}_${station.id}`]);
+            const visit = visitMap[`${patrol.id}_${station.id}`];
+            const status = visitStatus(patrol, station, visit);
             const st = byStation[station.id];
             const pt = byPatrol[patrol.id];
 
@@ -219,7 +258,7 @@ export function summarise(stations = [], patrols = [], visits = []) {
             if (status === "here" || status === "in-progress") {
                 st.here += 1;
                 pt.here += 1;
-                pt.hereAt.push(station);
+                pt.hereAt.push({ station, checkedInAt: visit?.checkedInAt || visit?.tasksStartedAt });
             }
             if (status === "skipped") {
                 st.skipped += 1;

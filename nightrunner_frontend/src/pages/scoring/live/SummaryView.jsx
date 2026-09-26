@@ -9,6 +9,13 @@ function patrolTitle(patrol) {
         : name;
 }
 
+function formatLocalTime(val) {
+    if (!val) return null;
+    const parsed = new Date(val);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
 // "1 patrol" / "3 patrols"
 function count(n, singular, plural = `${singular}s`) {
     return `${n} ${n === 1 ? singular : plural}`;
@@ -85,7 +92,10 @@ export default function SummaryView({ stations = [], patrols = [], visits = [] }
                 <ul className="summary-patrol-list">
                     {orderedPatrols.map((patrol) => {
                         const t = totals.patrols[patrol.id];
-                        const hereAt = t.hereAt.map((s) => s.name).join(", ");
+                        const hereAtStr = t.hereAt.map((entry) => {
+                            const timeStr = formatLocalTime(entry.checkedInAt);
+                            return timeStr ? `${entry.station.name} (since ${timeStr})` : entry.station.name;
+                        }).join(", ");
 
                         return (
                             <li
@@ -108,8 +118,8 @@ export default function SummaryView({ stations = [], patrols = [], visits = [] }
                                     {" · "}{t.remaining} remaining
                                 </span>
 
-                                {hereAt && (
-                                    <span className="summary-patrol-here">Now at {hereAt}</span>
+                                {hereAtStr && (
+                                    <span className="summary-patrol-here">Now at {hereAtStr}</span>
                                 )}
                             </li>
                         );

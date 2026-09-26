@@ -1,10 +1,16 @@
 .live-scoring-container {
 
+    min-height: 100vh;
+
+    width: 100%;
+
+    background: var(--page-bg);
+
+    color: var(--text-primary);
+
     padding: 1rem;
 
-    max-width: 1800px;
-
-    margin: 0 auto;
+    box-sizing: border-box;
 
 }
 
@@ -181,6 +187,8 @@
 
     font-size: 1.2rem;
 
+    background: var(--card-bg);
+
 }
 
 /* ---------- Fit View ---------- */
@@ -284,7 +292,7 @@
 
 .not-arrived {
 
-    background: transparent;
+    background: var(--card-bg);
 
     color: var(--text-muted);
 
@@ -363,7 +371,7 @@
 
     color: var(--text-primary);
 
-    background: var(--page-bg);
+    background: var(--card-bg);
 
 }
 
@@ -386,7 +394,7 @@
 
     z-index: 3;
 
-    background: var(--page-bg);
+    background: var(--card-bg);
 
     color: var(--text-primary);
 
@@ -407,7 +415,7 @@
 
     text-align: left;
 
-    background: var(--page-bg);
+    background: var(--card-bg);
 
     color: var(--text-primary);
 
@@ -435,6 +443,8 @@
 
     font-size: .875rem;
 
+    color: var(--text-primary);
+
 }
 
 .legend-box {
@@ -451,7 +461,7 @@
 
 .legend-box.not-arrived {
 
-    background: transparent;
+    background: var(--card-bg);
 
 }
 

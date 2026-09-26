@@ -65,9 +65,14 @@ describe("visitStatus", () => {
     });
 
     it("gives scored its own cell colour, not the plain check-out green", () => {
-        expect(cellState(patrol, station, { checkedInAt: "x", status: "completed" }).className).toBe("completed-scored");
-        expect(cellState(patrol, station, { checkedInAt: "x", checkedOutAt: "y" }).className).toBe("completed");
+        expect(cellState(patrol, station, { checkedInAt: "2026-09-25T20:00:00Z", status: "completed" }).className).toBe("completed-scored");
+        expect(cellState(patrol, station, { checkedInAt: "2026-09-25T20:00:00Z", checkedOutAt: "2026-09-25T20:20:00Z" }).className).toBe("completed");
         expect(cellState(patrol, station, { status: "skipped" }).value).toBe("–");
+    });
+
+    it("formats titles with localized times", () => {
+        const csHere = cellState(patrol, station, { checkedInAt: "2026-09-25T20:00:00Z" });
+        expect(csHere.title).toMatch(/Checked In \(\d+:\d+\s+[AP]M\)/);
     });
 });
 
@@ -82,7 +87,7 @@ describe("summarise", () => {
 
     it("counts per patrol and knows where each patrol is now", () => {
         expect(totals.patrols.p1).toMatchObject({ total: 3, finished: 2, scored: 1, waiting: 1, here: 1, remaining: 0 });
-        expect(totals.patrols.p1.hereAt.map((s) => s.id)).toEqual(["water"]);
+        expect(totals.patrols.p1.hereAt.map((entry) => entry.station.id)).toEqual(["water"]);
         expect(totals.patrols.p2).toMatchObject({ finished: 1, scored: 1, skipped: 1, remaining: 1 });
         expect(totals.patrols.p3).toMatchObject({ finished: 0, remaining: 3 });
     });
@@ -203,14 +208,28 @@ describe("SummaryView", () => {
         expect(text("summary-station-fire")).toContain("1 skipped");
     });
 
-    it("lists patrols by number with where they are now", () => {
+    it("lists patrols by number with where they are now including check-in time", () => {
         const rows = [...container.querySelectorAll(".summary-patrol-row")].map((li) => li.dataset.testid);
         expect(rows).toEqual(["summary-patrol-p1", "summary-patrol-p2", "summary-patrol-p3"]);
 
         const eagles = text("summary-patrol-p1");
         expect(eagles).toContain("Patrol 1 — Eagles");
         expect(eagles).toContain("2 of 3 finished");
-        expect(eagles).toContain("Now at Water");
+        expect(eagles).toMatch(/Now at Water \(since \d+:\d+\s+[AP]M\)/);
+    });
+});
+
+describe("ProgressGrid time display", () => {
+    it("formats hover titles with localized time ranges without rendering sub-text in cells", () => {
+        act(() => {
+            root.render(<ProgressGrid stations={STATIONS} patrols={PATROLS} visits={VISITS} />);
+        });
+
+        expect(container.querySelectorAll(".cell-time").length).toBe(0);
+
+        const cellsWithTitle = [...container.querySelectorAll("td[title]")].map((td) => td.getAttribute("title"));
+        const scoredTitle = cellsWithTitle.find((t) => t.includes("Scored (attempt locked)"));
+        expect(scoredTitle).toMatch(/Scored \(attempt locked\) \(\d+:\d+\s+[AP]M – \d+:\d+\s+[AP]M\)/);
     });
 });
 
