@@ -290,7 +290,11 @@
 
 /* ---------- Status Cells ---------- */
 
-.not-arrived {
+/* Scoped to `.live-table td` so they outrank the `.live-table td` rule that
+   paints every cell with --card-bg. As bare classes they lost to it, and each
+   status showed its white glyph on the theme's card colour. */
+
+.live-table td.not-arrived {
 
     background: var(--card-bg);
 
@@ -298,7 +302,7 @@
 
 }
 
-.checked-in {
+.live-table td.checked-in {
 
     background: #1976D2;
 
@@ -308,7 +312,7 @@
 
 }
 
-.in-progress {
+.live-table td.in-progress {
 
     background: #FF9800;
 
@@ -318,7 +322,7 @@
 
 }
 
-.completed {
+.live-table td.completed {
 
     background: #4CAF50;
 
@@ -328,7 +332,7 @@
 
 }
 
-.scored-only {
+.live-table td.scored-only {
 
     background: #9C27B0;
 
@@ -338,7 +342,7 @@
 
 }
 
-.completed-scored {
+.live-table td.completed-scored {
 
     background: #2E7D32;
 
@@ -351,7 +355,7 @@
 /* Declared not attempted (#245). Deliberately quiet: a dash on the theme's
    neutral fill, so it reads as "done with, nothing here", not as a state
    anyone needs to act on. */
-.skipped {
+.live-table td.skipped {
 
     background: var(--border);
 
