@@ -32,8 +32,12 @@ def _fmt_dt(val: Any) -> Optional[str]:
     if val is None:
         return None
     if hasattr(val, "isoformat"):
-        return val.isoformat()
-    return str(val)
+        val = val.isoformat()
+    else:
+        val = str(val)
+    if val and not val.endswith("Z") and "+" not in val and "-" not in val[10:]:
+        val = val.replace(" ", "T") + "Z"
+    return val
 
 # `theme` drives the public pages' colours, so a spectator sees the same
 # palette as the event rather than whatever their browser last stored.

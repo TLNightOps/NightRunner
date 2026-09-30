@@ -163,7 +163,11 @@ const CELL_STATES = {
 
 function formatLocalTime(val) {
     if (!val) return null;
-    const parsed = new Date(val);
+    let strVal = String(val).trim();
+    if (strVal && !strVal.endsWith("Z") && !strVal.includes("+") && !strVal.slice(10).includes("-")) {
+        strVal = strVal.replace(" ", "T") + "Z";
+    }
+    const parsed = new Date(strVal);
     if (Number.isNaN(parsed.getTime())) return null;
     return parsed.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
