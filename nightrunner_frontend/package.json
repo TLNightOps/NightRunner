@@ -45,7 +45,7 @@
     "http-server": "^14.1.1",
     "jsdom": "^30.0.1",
     "oxlint": "^1.82.0",
-    "storybook": "^8.6.18",
+    "storybook": "^8.6.19",
     "vite": "^8.2.4",
     "vitest": "^5.0.0"
   },
